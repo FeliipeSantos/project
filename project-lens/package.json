@@ -1,0 +1,12 @@
+{
+  "name": "project-lens",
+  "version": "1.0.0",
+  "description": "Project Lens - Execução Nativa",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
