@@ -1,0 +1,21 @@
+import React from 'react';
+
+interface BrandLogoProps {
+  size?: number;
+}
+
+export const BrandLogo: React.FC<BrandLogoProps> = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="brandGrad" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#3B82F6" />
+        <stop offset="100%" stopColor="#4EBE87" />
+      </linearGradient>
+    </defs>
+    <rect width="28" height="28" rx="8" fill="url(#brandGrad)" />
+    <path d="M8 19V13L12 9L16 12L20 7" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="20" cy="7" r="1.5" fill="#FFFFFF" />
+  </svg>
+);
+
+export default BrandLogo;

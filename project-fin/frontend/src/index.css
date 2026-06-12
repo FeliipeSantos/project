@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  color-scheme: dark;
+
+  /* ── Minhas Finanças Color Palette ── */
+  --color-bg:         #090A0E;
+  --color-icon-strip: #0F1015;
+  --color-surface:    #15161D;
+  --color-surface-2:  #1D1E26;
+  --color-primary:    #3B82F6;
+  --color-secondary:  #E05A5A;
+  --color-text:       #FFFFFF;
+  --color-muted:      #7E8494;
+  --color-border:     rgba(255, 255, 255, 0.03);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--color-text);
+}
+
+/* ── Custom scrollbar ── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: #333350; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #44446A; }

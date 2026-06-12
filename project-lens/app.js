@@ -1003,7 +1003,7 @@ function renderSubActivities() {
     li.className = `subactivity-item ${sub.completed ? 'completed' : ''}`;
     li.innerHTML = `
       <div class="subactivity-item-left">
-        <input type="checkbox" class="subactivity-checkbox" ${sub.completed ? 'checked' : ''} ${isEditMode ? '' : 'disabled'} data-index="${index}">
+        <input type="checkbox" class="subactivity-checkbox" ${sub.completed ? 'checked' : ''} data-index="${index}">
         <span class="subactivity-text" contenteditable="${isEditMode}" data-index="${index}">${sub.name}</span>
       </div>
       ${isEditMode ? `<button class="btn-icon delete-subactivity-btn" data-index="${index}" title="Excluir subatividade">🗑️</button>` : ''}
@@ -1011,12 +1011,14 @@ function renderSubActivities() {
     
     // Checkbox toggling
     li.querySelector('.subactivity-checkbox').addEventListener('change', (e) => {
-      if (!isEditMode) return;
       sub.completed = e.target.checked;
       recalculateActivityProgress(activity);
       recalculateProjectProgress();
       renderAll();
       populateSidebar();
+      if (!isEditMode) {
+        saveToStorage();
+      }
     });
     
     // Inline text editing
