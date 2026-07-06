@@ -33,28 +33,9 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     }
     user = user_repo.create(db, obj_in=user_data)
     
-    # Seed default categories for new user
-    default_cats = [
-        {"name": "Carteira", "type": "ACCOUNTS", "color": "#26C6DA", "icon": "CardIcon"},
-        {"name": "Conta Corrente", "type": "ACCOUNTS", "color": "#4EBE87", "icon": "AccountBalanceIcon"},
-        {"name": "Investimentos", "type": "ACCOUNTS", "color": "#42A5F5", "icon": "ShowChartIcon"},
-        {"name": "Outros", "type": "ACCOUNTS", "color": "#7E8494", "icon": "HelpIcon"},
-        {"name": "Salário", "type": "REVENUE", "color": "#4EBE87", "icon": "AttachMoneyIcon"},
-        {"name": "Alimentação", "type": "EXPENSE", "color": "#EC407A", "icon": "RestaurantIcon"},
-        {"name": "Moradia", "type": "EXPENSE", "color": "#7E57C2", "icon": "HomeIcon"},
-        {"name": "Lazer", "type": "EXPENSE", "color": "#FFCA28", "icon": "TvIcon"},
-    ]
-    for cat in default_cats:
-        category_repo.create(db, obj_in={
-            "user_id": user.id,
-            "name": cat["name"],
-            "type": cat["type"],
-            "color": cat["color"],
-            "icon": cat["icon"],
-            "show_in_accounts_by_category": True,
-            "show_in_category_summary": True,
-            "show_in_category_balance": True
-        })
+    # Seed default categories and subcategories for new user
+    from app.database.seeding import seed_user_categories
+    seed_user_categories(db, user.id)
     
     user_resp = UserResponse(
         id=user.id,
@@ -81,12 +62,12 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="E-mail ou senha incorretos"
+            detail="E-mail não cadastrado"
         )
     if not verify_password(request.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="E-mail ou senha incorretos"
+            detail="Senha incorreta"
         )
     
     user_resp = UserResponse(

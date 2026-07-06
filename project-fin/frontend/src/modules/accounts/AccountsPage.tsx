@@ -88,6 +88,7 @@ interface Transaction {
   date: string;
   type: 'REVENUE' | 'EXPENSE' | 'TRANSFER';
   description: string;
+  effective?: boolean;
 }
 
 const ACCOUNT_TYPES: Record<string, string> = {
@@ -344,13 +345,10 @@ const AccountsPage: React.FC = () => {
   };
 
   const calculatePrevisto = (acc: Account) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Future transactions
-    const futureTxs = transactions.filter((t) => new Date(t.date) > today);
+    // Non-effective transactions (effective is false)
+    const pendingTxs = transactions.filter((t) => !t.effective);
     let delta = 0;
-    futureTxs.forEach((t) => {
+    pendingTxs.forEach((t) => {
       if (t.accountId === acc.id) {
         if (t.type === 'REVENUE') delta += Number(t.value || 0);
         if (t.type === 'EXPENSE') delta -= Number(t.value || 0);

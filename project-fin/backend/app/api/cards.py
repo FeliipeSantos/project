@@ -18,7 +18,8 @@ def build_card_response(card: CreditCard, db: Session) -> CreditCardResponse:
         Transaction.type == "EXPENSE"
     ).all()
     
-    limit_used = sum(t.value for t in transactions) if transactions else Decimal("0.00")
+    tx_sum = sum(t.value for t in transactions) if transactions else Decimal("0.00")
+    limit_used = (card.initial_invoice or Decimal("0.00")) + tx_sum
     limit_available = card.limit_total - limit_used
     
     card_dict = {
@@ -31,6 +32,12 @@ def build_card_response(card: CreditCard, db: Session) -> CreditCardResponse:
         "limit_available": limit_available,
         "closing_day": card.closing_day,
         "due_day": card.due_day,
+        "color": card.color,
+        "initial_invoice": card.initial_invoice,
+        "account_id": card.account_id,
+        "is_main": card.is_main,
+        "dynamic_closing": card.dynamic_closing,
+        "due_business_days": card.due_business_days,
         "created_at": card.created_at,
         "updated_at": card.updated_at
     }
@@ -42,6 +49,9 @@ def create_card(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    if request.is_main:
+        db.query(CreditCard).filter(CreditCard.user_id == current_user.id).update({"is_main": False})
+    
     obj_in = {
         "user_id": current_user.id,
         "name": request.name,
@@ -49,7 +59,13 @@ def create_card(
         "brand": request.brand,
         "limit_total": request.limit_total,
         "closing_day": request.closing_day,
-        "due_day": request.due_day
+        "due_day": request.due_day,
+        "color": request.color,
+        "initial_invoice": request.initial_invoice,
+        "account_id": request.account_id,
+        "is_main": request.is_main,
+        "dynamic_closing": request.dynamic_closing,
+        "due_business_days": request.due_business_days
     }
     card = card_repo.create(db, obj_in=obj_in)
     response = build_card_response(card, db)
@@ -94,13 +110,22 @@ def update_card(
     
     before = build_card_response(card, db)
     
+    if request.is_main:
+        db.query(CreditCard).filter(CreditCard.user_id == current_user.id, CreditCard.id != id).update({"is_main": False})
+    
     obj_in = {
         "name": request.name,
         "bank": request.bank,
         "brand": request.brand,
         "limit_total": request.limit_total,
         "closing_day": request.closing_day,
-        "due_day": request.due_day
+        "due_day": request.due_day,
+        "color": request.color,
+        "initial_invoice": request.initial_invoice,
+        "account_id": request.account_id,
+        "is_main": request.is_main,
+        "dynamic_closing": request.dynamic_closing,
+        "due_business_days": request.due_business_days
     }
     
     updated_card = card_repo.update(db, db_obj=card, obj_in=obj_in)

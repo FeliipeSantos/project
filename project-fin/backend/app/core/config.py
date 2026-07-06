@@ -13,7 +13,7 @@ class Settings:
     
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL", 
-        "postgresql://fincontrol_user:fincontrol_secure_pass_2026@localhost:5432/fincontrol"
+        "sqlite:///./fincontrol.db"
     )
     
     REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")

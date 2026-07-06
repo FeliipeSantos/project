@@ -11,6 +11,46 @@ from app.api import (
 # Create database tables automatically if they don't exist
 Base.metadata.create_all(bind=engine)
 
+# Dynamic DB Migration: Add effective_date and due_date columns if not present (SQLite handles ALTER TABLE ADD COLUMN)
+from sqlalchemy import text
+with engine.connect() as conn:
+    try:
+        conn.execute(text("ALTER TABLE transactions ADD COLUMN effective_date DATE"))
+        conn.commit()
+    except Exception:
+        pass
+with engine.connect() as conn:
+    try:
+        conn.execute(text("ALTER TABLE transactions ADD COLUMN due_date DATE"))
+        conn.commit()
+    except Exception:
+        pass
+
+# Seed default user felipe@test.com if it doesn't exist
+from app.database.connection import SessionLocal
+from app.repositories.base import user_repo, category_repo
+from app.core.security import hash_password, generate_totp_secret
+
+db = SessionLocal()
+try:
+    if not user_repo.exists_by_email(db, "felipe@test.com"):
+        mfa_secret = generate_totp_secret()
+        user_data = {
+            "full_name": "Felipe Padrão",
+            "email": "felipe@test.com",
+            "password_hash": hash_password("123456"),
+            "mfa_enabled": False,
+            "mfa_secret": mfa_secret
+        }
+        user = user_repo.create(db, obj_in=user_data)
+        
+        # Seed default categories and subcategories for new user
+        from app.database.seeding import seed_user_categories
+        seed_user_categories(db, user.id)
+finally:
+    db.close()
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Backend migrated from Spring Boot to Python FastAPI",

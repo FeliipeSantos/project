@@ -59,6 +59,8 @@ import {
   ShowChart as ChartIcon,
   SportsEsports as GameIcon,
   Home as HomeIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon,
 } from '@mui/icons-material';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -71,6 +73,9 @@ interface Account {
   color: string;
   type: string;
   active: boolean;
+  isDefault?: boolean;
+  ignoreInTotals?: boolean;
+  createdAt?: string;
 }
 
 interface Category {
@@ -122,6 +127,7 @@ interface CreditCard {
   limitUsed: number;
   closingDay: number;
   dueDay: number;
+  isMain?: boolean;
 }
 
 interface Budget {
@@ -163,6 +169,9 @@ interface Transaction {
   description: string;
   notes?: string;
   tags?: string;
+  effective: boolean;
+  effectiveDate?: string;
+  dueDate?: string;
   installments?: Installment[];
 }
 
@@ -194,6 +203,302 @@ const AVAILABLE_COLORS = [
   { value: '#7E8494', label: 'Cinza' },
 ];
 
+const renderBankLogo = (institution: string, size: number = 24) => {
+  const name = institution?.toLowerCase() || '';
+
+  if (name.includes('nubank')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#820AD1" />
+        <text x="20" y="24.5" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="800" fontSize="14" textAnchor="middle" fontStyle="italic">nu</text>
+      </svg>
+    );
+  }
+  if (name.includes('itau') || name.includes('itaú')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#EC7000" />
+        <rect x="9" y="9" width="22" height="22" rx="4" fill="#002E7A" />
+        <text x="20" y="23.5" fill="#FFD200" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="8" textAnchor="middle">itaú</text>
+      </svg>
+    );
+  }
+  if (name.includes('bradesco')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#CC0000" />
+        <path d="M20,11 C16,11 13,15 13,19 L27,19 C27,15 24,11 20,11 Z" fill="#FFFFFF" />
+        <rect x="18.5" y="19" width="3" height="10" fill="#FFFFFF" />
+        <circle cx="20" cy="14" r="1.8" fill="#CC0000" />
+        <circle cx="16" cy="18" r="1.8" fill="#CC0000" />
+        <circle cx="24" cy="18" r="1.8" fill="#CC0000" />
+      </svg>
+    );
+  }
+  if (name.includes('banco do brasil') || name === 'bb') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#FAF000" />
+        <path d="M13,15 L13,25 L23,25 M27,25 L27,15 L17,15" stroke="#002E7A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </svg>
+    );
+  }
+  if (name.includes('santander')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#EC0000" />
+        <path d="M20,11 C20,11 24,15 24,19 C24,23 20,26 20,26 C20,26 16,23 16,19 C16,15 20,11 20,11 Z" fill="#FFFFFF" />
+        <path d="M20,15 C20,15 22,18 22,20 C22,22 20,24 20,24 C20,24 18,22 18,20 C18,18 20,15 20,15 Z" fill="#EC0000" />
+      </svg>
+    );
+  }
+  if (name.includes('caixa tem')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#40C4FF" />
+        <rect x="12" y="14" width="16" height="12" rx="3" fill="#FFFFFF" />
+        <polygon points="16,26 20,26 18,29" fill="#FFFFFF" />
+      </svg>
+    );
+  }
+  if (name.includes('caixa')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#005CA9" />
+        <text x="17" y="26" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="18" textAnchor="middle">X</text>
+        <path d="M24,12 L30,12 L30,20 L24,20 Z" fill="#F47A20" />
+      </svg>
+    );
+  }
+  if (name.includes('c6')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#1E1E1E" />
+        <text x="20" y="25.5" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="800" fontSize="14" textAnchor="middle">C6</text>
+      </svg>
+    );
+  }
+  if (name.includes('inter')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#FF7A00" />
+        <text x="20" y="25" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="800" fontSize="13" textAnchor="middle">IN</text>
+      </svg>
+    );
+  }
+  if (name.includes('btg')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#081C3B" />
+        <path d="M12,25 L20,13 L28,25 Z M16,23 L24,23 L20,17 Z" stroke="#FFFFFF" strokeWidth="2" fill="none" />
+      </svg>
+    );
+  }
+  if (name.includes('xp')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#000000" />
+        <text x="20" y="25.5" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="800" fontSize="14" textAnchor="middle">xp</text>
+      </svg>
+    );
+  }
+  if (name.includes('neon')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#00E5FF" />
+        <text x="20" y="25.5" fill="#00375B" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="14" textAnchor="middle">N</text>
+      </svg>
+    );
+  }
+  if (name.includes('next')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#00FF5F" />
+        <text x="20" y="25" fill="#000000" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="14" textAnchor="middle">n</text>
+      </svg>
+    );
+  }
+  if (name.includes('bmg')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#FF6C00" />
+        <text x="20" y="24" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="9" textAnchor="middle">BMG</text>
+      </svg>
+    );
+  }
+  if (name.includes('banrisul')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#00519E" />
+        <path d="M15,15 L25,15 L25,25" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <path d="M25,25 L15,25 L15,15" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.6" />
+      </svg>
+    );
+  }
+  if (name.includes('sicoob')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#00363A" />
+        <circle cx="20" cy="20" r="5" fill="#81C784" />
+        <circle cx="20" cy="12" r="3" fill="#FFF176" />
+        <circle cx="20" cy="28" r="3" fill="#FFF176" />
+        <circle cx="12" cy="20" r="3" fill="#FFF176" />
+        <circle cx="28" cy="20" r="3" fill="#FFF176" />
+      </svg>
+    );
+  }
+  if (name.includes('sicredi')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#339933" />
+        <path d="M20,12 C16,16 16,22 20,28 C24,22 24,16 20,12 Z" fill="#FFFFFF" />
+      </svg>
+    );
+  }
+  if (name.includes('stone')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#00A859" />
+        <text x="20" y="26.5" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="18" textAnchor="middle">S</text>
+      </svg>
+    );
+  }
+  if (name.includes('pagbank') || name.includes('pagseguro')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#006B75" />
+        <path d="M12,15 L28,15 L28,25 L12,25 Z" fill="#FFCC00" />
+        <text x="20" y="22" fill="#006B75" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="8" textAnchor="middle">PAG</text>
+      </svg>
+    );
+  }
+  if (name.includes('picpay')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#11C76F" />
+        <text x="20" y="27.5" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="18" textAnchor="middle">P</text>
+      </svg>
+    );
+  }
+  if (name.includes('mercado pago') || name.includes('mercadopago')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#00A6FF" />
+        <path d="M13,22 C13,22 16,17 20,17 C24,17 27,22 27,22 M16,19 C16,19 18,22 20,22 C22,22 24,19 24,19" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      </svg>
+    );
+  }
+  if (name.includes('will')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#FFE600" />
+        <text x="20" y="26.5" fill="#000000" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="18" textAnchor="middle">w</text>
+      </svg>
+    );
+  }
+  if (name.includes('paypal')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#003087" />
+        <text x="17" y="25" fill="#0079C1" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="14" fontStyle="italic">P</text>
+        <text x="21" y="27" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="14" fontStyle="italic">P</text>
+      </svg>
+    );
+  }
+  if (name.includes('binance')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#1E1E1E" />
+        <polygon points="20,12 28,20 20,28 12,20" stroke="#F3BA2F" strokeWidth="2" fill="none" />
+        <polygon points="20,16 24,20 20,24 16,20" fill="#F3BA2F" />
+      </svg>
+    );
+  }
+  if (name.includes('pan')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#00A3E0" />
+        <text x="20" y="26" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="14" textAnchor="middle">pan</text>
+      </svg>
+    );
+  }
+  if (name.includes('bari')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#0A0A0A" />
+        <text x="20" y="24.5" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="9" textAnchor="middle">bari.</text>
+      </svg>
+    );
+  }
+  if (name.includes('ame')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#FF007A" />
+        <text x="20" y="25.5" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="800" fontSize="13" textAnchor="middle">ame</text>
+      </svg>
+    );
+  }
+  if (name.includes('agibank')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#E6007E" />
+        <text x="20" y="24.5" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="12" textAnchor="middle">ag:</text>
+      </svg>
+    );
+  }
+  if (name.includes('safra')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#0C2340" />
+        <rect x="12" y="12" width="16" height="16" rx="2" stroke="#D4AF37" strokeWidth="1.5" fill="none" />
+        <text x="20" y="23" fill="#D4AF37" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="8" textAnchor="middle">S</text>
+      </svg>
+    );
+  }
+  if (name.includes('digio')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#003399" />
+        <text x="20" y="24" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="8" textAnchor="middle">digio</text>
+      </svg>
+    );
+  }
+  if (name.includes('trigg')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#00D2C4" />
+        <text x="20" y="24" fill="#FFFFFF" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontSize="8" textAnchor="middle">Trigg</text>
+      </svg>
+    );
+  }
+  if (name.includes('alelo')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+        <circle cx="20" cy="20" r="20" fill="#007D4A" />
+        <circle cx="20" cy="20" r="8" stroke="#FFFFFF" strokeWidth="2.5" fill="none" />
+        <circle cx="18" cy="18" r="3" fill="#FFFFFF" />
+      </svg>
+    );
+  }
+
+  // Default fallback (generic bank card logo)
+  return (
+    <Avatar
+      sx={{
+        bgcolor: '#2D303E',
+        color: '#7E8494',
+        width: size,
+        height: size,
+        fontSize: size * 0.45 + 'px',
+        fontWeight: 700,
+        border: '1px solid rgba(255,255,255,0.05)',
+      }}
+    >
+      {institution?.charAt(0).toUpperCase() || 'B'}
+    </Avatar>
+  );
+};
+
 const Resume: React.FC = () => {
   const { user, getMfaSetup, enableMfa, disableMfa } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -213,22 +518,28 @@ const Resume: React.FC = () => {
   const [transactionOpen, setTransactionOpen] = useState(false);
   const [mfaOpen, setMfaOpen] = useState(false);
   const [isCardExpense, setIsCardExpense] = useState(false);
+  const [futureConfirmOpen, setFutureConfirmOpen] = useState(false);
+  const [futureTxToToggle, setFutureTxToToggle] = useState<Transaction | null>(null);
 
   // Custom Date/Time picker states
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [timePickerOpen, setTimePickerOpen] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(new Date());
   const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
-  const [tempHour, setTempHour] = useState(8);
-  const [tempMinute, setTempMinute] = useState(34);
+  const [tempHour, setTempHour] = useState(() => new Date().getHours());
+  const [tempMinute, setTempMinute] = useState(() => new Date().getMinutes());
   const [timePickerMode, setTimePickerMode] = useState<'HOURS' | 'MINUTES'>('HOURS');
   const [timePickerViewMode, setTimePickerViewMode] = useState<'DIAL' | 'KEYBOARD'>('DIAL');
   const [focusedField, setFocusedField] = useState<'HOURS' | 'MINUTES' | null>(null);
   const [isDraggingTime, setIsDraggingTime] = useState(false);
-  const [rawHourStr, setRawHourStr] = useState('08');
-  const [rawMinuteStr, setRawMinuteStr] = useState('34');
-  // Date target field state removed as all dates bind to txDate
-  const [txTimeVal, setTxTimeVal] = useState('08:34');
+  const [rawHourStr, setRawHourStr] = useState(() => String(new Date().getHours()).padStart(2, '0'));
+  const [rawMinuteStr, setRawMinuteStr] = useState(() => String(new Date().getMinutes()).padStart(2, '0'));
+  const [txTimeVal, setTxTimeVal] = useState(() => {
+    const now = new Date();
+    const hrs = String(now.getHours()).padStart(2, '0');
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    return `${hrs}:${mins}`;
+  });
 
   useEffect(() => {
     if (focusedField !== 'HOURS') {
@@ -301,6 +612,7 @@ const Resume: React.FC = () => {
     return isNaN(parsed) ? 0 : parsed;
   };
   const [txDate, setTxDate] = useState(new Date().toISOString().split('T')[0]);
+  const [txDueDate, setTxDueDate] = useState(new Date().toISOString().split('T')[0]);
   const [txType, setTxType] = useState<'REVENUE' | 'EXPENSE' | 'TRANSFER'>('EXPENSE');
   const [txAccountId, setTxAccountId] = useState('');
   const [txDestAccountId, setTxDestAccountId] = useState('');
@@ -310,6 +622,19 @@ const Resume: React.FC = () => {
   const [txNotes, setTxNotes] = useState('');
   const [txTags, setTxTags] = useState('');
   const [txInstallments, setTxInstallments] = useState('1');
+  const [txEffective, setTxEffective] = useState(true);
+  const [txEffectiveDate, setTxEffectiveDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [datePickerTarget, setDatePickerTarget] = useState<'VENCIMENTO' | 'EFETIVACAO' | 'LANCAMENTO'>('VENCIMENTO');
+  const isEditing = false;
+
+  // Recurrence states
+  const [recurrenceType, setRecurrenceType] = useState<'NP' | 'PARCELADA' | 'FIXA'>('NP');
+  const [startInstallment, setStartInstallment] = useState<number>(1);
+  const [installmentsCount, setInstallmentsCount] = useState<number>(2);
+  const [periodicity, setPeriodicity] = useState<string>('mensal');
+  const [valueType, setValueType] = useState<'total' | 'parcela'>('total');
+  const [recurrenceDialogOpen, setRecurrenceDialogOpen] = useState(false);
+  const [repeatConfigDialogOpen, setRepeatConfigDialogOpen] = useState(false);
 
   // Quick creation dialog states
   const [quickCatOpen, setQuickCatOpen] = useState(false);
@@ -496,7 +821,14 @@ const Resume: React.FC = () => {
         creditCardId: txType === 'EXPENSE' && txCardId ? txCardId : null,
         notes: txNotes,
         tags: txTags,
-        installmentsCount: parseInt(txInstallments) > 1 ? parseInt(txInstallments) : null,
+        dueDate: txDueDate || null,
+        installmentsCount: recurrenceType === 'PARCELADA' ? installmentsCount : null,
+        effective: txEffective,
+        effectiveDate: txEffective ? txEffectiveDate : null,
+        recurrenceType: recurrenceType,
+        startInstallment: recurrenceType === 'PARCELADA' ? startInstallment : null,
+        periodicity: recurrenceType === 'PARCELADA' ? periodicity : null,
+        valueType: recurrenceType === 'PARCELADA' ? valueType : null,
       });
       handleCloseTransactionModal();
       setTxDesc('');
@@ -511,7 +843,22 @@ const Resume: React.FC = () => {
       setTxNotes('');
       setTxTags('');
       setTxInstallments('1');
-      setTxTimeVal('08:34');
+      const now = new Date();
+      const hrs = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      setTxTimeVal(`${hrs}:${mins}`);
+      setTempHour(now.getHours());
+      setTempMinute(now.getMinutes());
+      setRawHourStr(hrs);
+      setRawMinuteStr(mins);
+      setTxEffective(true);
+      setTxEffectiveDate(new Date().toISOString().split('T')[0]);
+      setTxDueDate(new Date().toISOString().split('T')[0]);
+      setRecurrenceType('NP');
+      setStartInstallment(1);
+      setInstallmentsCount(2);
+      setPeriodicity('mensal');
+      setValueType('total');
       fetchData();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Erro ao registrar transação.');
@@ -571,8 +918,9 @@ const Resume: React.FC = () => {
       } else if (typeParam === 'EXPENSE_CARD') {
         targetType = 'EXPENSE';
         isCard = true;
-        if (cards.length > 0) {
-          targetCardId = cards[0].id;
+        const mainCard = cards.find((c) => c.isMain) || cards[0];
+        if (mainCard) {
+          targetCardId = mainCard.id;
         }
       } else if (typeParam === 'EXPENSE') {
         targetType = 'EXPENSE';
@@ -582,14 +930,14 @@ const Resume: React.FC = () => {
       setTxCardId(targetCardId);
       setIsCardExpense(isCard);
 
-      // Pre-select first account if not already selected
-      if (!txAccountId && accounts.length > 0) {
-        setTxAccountId(accounts[0].id);
-      }
-      if (targetType === 'TRANSFER' && !txDestAccountId && accounts.length > 1) {
-        setTxDestAccountId(accounts[1].id);
-      } else if (targetType === 'TRANSFER' && !txDestAccountId && accounts.length > 0) {
-        setTxDestAccountId(accounts[0].id);
+      // Pre-select account/dest
+      const defaultAccount = accounts.find((acc) => acc.isDefault) || accounts[0];
+      if (defaultAccount) setTxAccountId(defaultAccount.id);
+      if (targetType === 'TRANSFER') {
+        const otherAccount = accounts.find((acc) => acc.id !== defaultAccount?.id) || accounts[1];
+        if (otherAccount) setTxDestAccountId(otherAccount.id);
+      } else if (defaultAccount) {
+        setTxDestAccountId(defaultAccount.id);
       }
 
       // Pre-select first category matching the type
@@ -599,21 +947,47 @@ const Resume: React.FC = () => {
           setTxCategoryId(filteredCats[0].id);
         }
       }
+
+      setTxDate(new Date().toISOString().split('T')[0]);
+      const now = new Date();
+      const hrs = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      setTxTimeVal(`${hrs}:${mins}`);
+      setTempHour(now.getHours());
+      setTempMinute(now.getMinutes());
+      setRawHourStr(hrs);
+      setRawMinuteStr(mins);
+      setTxEffective(true);
+      setTxEffectiveDate(new Date().toISOString().split('T')[0]);
+      setTxDueDate(new Date().toISOString().split('T')[0]);
+      setRecurrenceType('NP');
+      setStartInstallment(1);
+      setInstallmentsCount(2);
+      setPeriodicity('mensal');
+      setValueType('total');
     } else {
       setTransactionOpen(false);
     }
   }, [searchParams, cards, accounts, categories]);
 
   // Dynamic values filtered by the Month/Year navigator
-  const filteredTransactions = transactions.filter((t) => {
-    if (!t.date) return false;
-    const tDate = new Date(t.date);
-    const tMonth = tDate.getMonth() + 1;
-    const tYear = tDate.getFullYear();
-    return tMonth === queryMonth && tYear === queryYear;
-  });
+  const isBeforeQueryMonth = (dateStr: string) => {
+    if (!dateStr) return false;
+    const [y, m] = dateStr.split('-').map(Number);
+    if (y < queryYear) return true;
+    if (y === queryYear && m < queryMonth) return true;
+    return false;
+  };
 
-  const totalBalance = accounts.reduce((acc, curr) => acc + Number(curr.balanceCurrent || 0), 0);
+  const isDuringQueryMonth = (dateStr: string) => {
+    if (!dateStr) return false;
+    const [y, m] = dateStr.split('-').map(Number);
+    return y === queryYear && m === queryMonth;
+  };
+
+  const getActiveDate = (t: Transaction) => t.effective && t.effectiveDate ? t.effectiveDate : (t.dueDate || t.date);
+
+  const filteredTransactions = transactions.filter((t) => isDuringQueryMonth(getActiveDate(t)));
 
   const totalIncome = filteredTransactions
     .filter((t) => t.type === 'REVENUE')
@@ -624,11 +998,202 @@ const Resume: React.FC = () => {
     .reduce((acc, curr) => acc + Number(curr.value || 0), 0);
 
   const totalMovementsCount = filteredTransactions.length;
+  const totalTransfers = filteredTransactions
+    .filter((t) => t.type === 'TRANSFER')
+    .reduce((acc, curr) => acc + Number(curr.value || 0), 0);
   const totalFaturas = cards.reduce((acc, curr) => acc + Number(curr.limitUsed || 0), 0);
 
-  // Initial and Forecast timeline calculations
-  const initialBalance = totalBalance - totalIncome + totalExpense;
-  const forecastBalance = totalBalance; // predicted balance
+  const isAccountActiveInQueryMonth = (createdAtStr?: string) => {
+    if (!createdAtStr) return true;
+    const [datePart] = createdAtStr.split('T');
+    const [y, m] = datePart.split('-').map(Number);
+    if (y < queryYear) return true;
+    if (y === queryYear && m <= queryMonth) return true;
+    return false;
+  };
+
+  const activeAccounts = accounts.filter((a) => !a.ignoreInTotals);
+  const startingBalance = activeAccounts
+    .filter((a) => isAccountActiveInQueryMonth(a.createdAt))
+    .reduce((sum, a) => sum + Number(a.balanceInitial || 0), 0);
+
+  // Cumulative sums for previous months and current month
+  let deltaBefore = 0;
+  let deltaEffectiveBefore = 0;
+  transactions.forEach((t) => {
+    if (t.accountId) {
+      const acc = accounts.find((a) => a.id === t.accountId);
+      if (acc?.ignoreInTotals) return;
+      if (!isAccountActiveInQueryMonth(acc?.createdAt)) return;
+    }
+    const actDate = getActiveDate(t);
+    if (isBeforeQueryMonth(actDate)) {
+      const val = Number(t.value || 0);
+      if (t.type === 'REVENUE') {
+        deltaBefore += val;
+        deltaEffectiveBefore += val;
+      } else if (t.type === 'EXPENSE') {
+        deltaBefore -= val;
+        deltaEffectiveBefore -= val;
+      }
+    }
+  });
+
+  let deltaDuring = 0;
+  let deltaEffectiveDuring = 0;
+  transactions.forEach((t) => {
+    if (t.accountId) {
+      const acc = accounts.find((a) => a.id === t.accountId);
+      if (acc?.ignoreInTotals) return;
+      if (!isAccountActiveInQueryMonth(acc?.createdAt)) return;
+    }
+    const actDate = getActiveDate(t);
+    if (isDuringQueryMonth(actDate)) {
+      const val = Number(t.value || 0);
+      if (t.type === 'REVENUE') {
+        deltaDuring += val;
+        if (t.effective) deltaEffectiveDuring += val;
+      } else if (t.type === 'EXPENSE') {
+        deltaDuring -= val;
+        if (t.effective) deltaEffectiveDuring -= val;
+      }
+    }
+  });
+
+  const initialBalance = startingBalance + deltaBefore;
+  const forecastBalance = initialBalance + deltaDuring;
+  const totalBalance = startingBalance + deltaEffectiveBefore + deltaEffectiveDuring;
+
+  // Previous Month calculations for indicators
+  const getPrevMonthYear = () => {
+    let pm = queryMonth - 1;
+    let py = queryYear;
+    if (pm === 0) {
+      pm = 12;
+      py = queryYear - 1;
+    }
+    return { prevMonth: pm, prevYear: py };
+  };
+  const { prevMonth, prevYear } = getPrevMonthYear();
+
+  const isPrevMonth = (dateStr: string) => {
+    if (!dateStr) return false;
+    const [y, m] = dateStr.split('-').map(Number);
+    return y === prevYear && m === prevMonth;
+  };
+
+  const prevMonthTransactions = transactions.filter((t) => isPrevMonth(getActiveDate(t)));
+
+  const prevMonthIncome = prevMonthTransactions
+    .filter((t) => t.type === 'REVENUE')
+    .reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+
+  const prevMonthExpense = prevMonthTransactions
+    .filter((t) => t.type === 'EXPENSE')
+    .reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+
+  const prevMonthTransfers = prevMonthTransactions
+    .filter((t) => t.type === 'TRANSFER')
+    .reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+
+  // Delta before previous month to find starting balance of previous month
+  const isBeforePrevMonth = (dateStr: string) => {
+    if (!dateStr) return false;
+    const [y, m] = dateStr.split('-').map(Number);
+    if (y < prevYear) return true;
+    if (y === prevYear && m < prevMonth) return true;
+    return false;
+  };
+
+  let deltaEffectiveBeforePrev = 0;
+  transactions.forEach((t) => {
+    if (t.accountId) {
+      const acc = accounts.find((a) => a.id === t.accountId);
+      if (acc?.ignoreInTotals) return;
+      if (!isAccountActiveInQueryMonth(acc?.createdAt)) return;
+    }
+    if (isBeforePrevMonth(t.date)) {
+      const val = Number(t.value || 0);
+      if (t.type === 'REVENUE') deltaEffectiveBeforePrev += val;
+      if (t.type === 'EXPENSE') deltaEffectiveBeforePrev -= val;
+    }
+  });
+
+  const prevStartingBalance = activeAccounts
+    .filter((a) => {
+      if (!a.createdAt) return true;
+      const [datePart] = a.createdAt.split('T');
+      const [y, m] = datePart.split('-').map(Number);
+      if (y < prevYear) return true;
+      if (y === prevYear && m <= prevMonth) return true;
+      return false;
+    })
+    .reduce((sum, a) => sum + Number(a.balanceInitial || 0), 0);
+
+  let deltaEffectiveDuringPrev = 0;
+  prevMonthTransactions.forEach((t) => {
+    if (t.accountId) {
+      const acc = accounts.find((a) => a.id === t.accountId);
+      if (acc?.ignoreInTotals) return;
+    }
+    const val = Number(t.value || 0);
+    if (t.type === 'REVENUE' && t.effective) deltaEffectiveDuringPrev += val;
+    if (t.type === 'EXPENSE' && t.effective) deltaEffectiveDuringPrev -= val;
+  });
+
+  const prevMonthBalance = prevStartingBalance + deltaEffectiveBeforePrev + deltaEffectiveDuringPrev;
+
+  // Percentage badge generation helpers
+  const getPercentageBadge = (current: number, previous: number) => {
+    if (previous === 0) {
+      if (current === 0) return { text: '0% vs. mês anterior', direction: 'up' as const, type: 'blue' as const };
+      return { text: '100% vs. mês anterior', direction: 'up' as const, type: 'green' as const };
+    }
+    const pct = ((current - previous) / previous) * 100;
+    const direction = pct >= 0 ? ('up' as const) : ('down' as const);
+    const type = pct >= 0 ? ('green' as const) : ('red' as const);
+    return {
+      text: `${Math.abs(Math.round(pct))}% vs. mês anterior`,
+      direction,
+      type
+    };
+  };
+
+  const getExpensePercentageBadge = (current: number, previous: number) => {
+    if (previous === 0) {
+      if (current === 0) return { text: '0% vs. mês anterior', direction: 'down' as const, type: 'green' as const };
+      return { text: '100% vs. mês anterior', direction: 'up' as const, type: 'red' as const };
+    }
+    const pct = ((current - previous) / previous) * 100;
+    const direction = pct >= 0 ? ('up' as const) : ('down' as const);
+    const type = pct >= 0 ? ('red' as const) : ('green' as const);
+    return {
+      text: `${Math.abs(Math.round(pct))}% vs. mês anterior`,
+      direction,
+      type
+    };
+  };
+
+  const getBalancePercentageBadge = (current: number, previous: number) => {
+    if (previous === 0) {
+      if (current === 0) return { text: '0% vs. mês anterior', direction: 'up' as const, type: 'blue' as const };
+      return { text: '100% vs. mês anterior', direction: 'up' as const, type: 'green' as const };
+    }
+    const pct = ((current - previous) / previous) * 100;
+    const direction = pct >= 0 ? ('up' as const) : ('down' as const);
+    const type = pct >= 0 ? ('green' as const) : ('red' as const);
+    return {
+      text: `${Math.abs(Math.round(pct))}% vs. mês anterior`,
+      direction,
+      type
+    };
+  };
+
+  const comparisonBalance = prevStartingBalance === 0 ? initialBalance : prevMonthBalance;
+  const balanceBadge = getBalancePercentageBadge(totalBalance, comparisonBalance);
+  const incomeBadge = getPercentageBadge(totalIncome, prevMonthIncome);
+  const expenseBadge = getExpensePercentageBadge(totalExpense, prevMonthExpense);
+  const movementsBadge = getPercentageBadge(totalTransfers, prevMonthTransfers);
 
   // Savings rate calculations
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
@@ -663,31 +1228,77 @@ const Resume: React.FC = () => {
   };
   const expenseChartData = getChartData();
 
-  // Group active categories with dynamic transactions mapping
-  const getCategorySummary = () => {
-    const summaryMap: Record<string, { name: string; type: string; revenue: number; expense: number }> = {};
-    categories.forEach((cat) => {
-      summaryMap[cat.id] = { name: cat.name, type: cat.type, revenue: 0, expense: 0 };
+  const getAccountSummary = () => {
+    return activeAccounts.map((acc) => {
+      // Calculate Starting Balance (prior transactions)
+      let deltaBefore = 0;
+      transactions.forEach((t) => {
+        const actDate = getActiveDate(t);
+        if (isBeforeQueryMonth(actDate)) {
+          const val = Number(t.value || 0);
+          if (t.accountId === acc.id) {
+            if (t.type === 'REVENUE') deltaBefore += val;
+            else if (t.type === 'EXPENSE') deltaBefore -= val;
+            else if (t.type === 'TRANSFER') deltaBefore -= val;
+          }
+          if (t.destinationAccountId === acc.id && t.type === 'TRANSFER') {
+            deltaBefore += val;
+          }
+        }
+      });
+      const startingBal = Number(acc.balanceInitial || 0) + deltaBefore;
+
+      let receitas = 0;
+      let despesas = 0;
+      let transfersOut = 0;
+      let transfersIn = 0;
+
+      let receitasEffective = 0;
+      let despesasEffective = 0;
+      let transfersOutEffective = 0;
+      let transfersInEffective = 0;
+
+      transactions.forEach((t) => {
+        const actDate = getActiveDate(t);
+        if (isDuringQueryMonth(actDate)) {
+          const val = Number(t.value || 0);
+          if (t.accountId === acc.id) {
+            if (t.type === 'REVENUE') {
+              receitas += val;
+              if (t.effective) receitasEffective += val;
+            } else if (t.type === 'EXPENSE') {
+              despesas += val;
+              if (t.effective) despesasEffective += val;
+            } else if (t.type === 'TRANSFER') {
+              transfersOut += val;
+              if (t.effective) transfersOutEffective += val;
+            }
+          }
+          if (t.destinationAccountId === acc.id && t.type === 'TRANSFER') {
+            transfersIn += val;
+            if (t.effective) transfersInEffective += val;
+          }
+        }
+      });
+
+      // Saldo (Effective Ending Balance of this month)
+      const saldo = startingBal + receitasEffective - despesasEffective - transfersOutEffective + transfersInEffective;
+
+      // Previsto (Forecasted Ending Balance of this month)
+      const previsto = startingBal + receitas - despesas - transfersOut + transfersIn;
+
+      return {
+        id: acc.id,
+        name: acc.name,
+        institution: acc.institution,
+        receitas,
+        despesas,
+        saldo,
+        previsto
+      };
     });
-    filteredTransactions.forEach((tx) => {
-      if (!tx.categoryId || !summaryMap[tx.categoryId]) return;
-      if (tx.type === 'REVENUE') {
-        summaryMap[tx.categoryId].revenue += Number(tx.value || 0);
-      } else if (tx.type === 'EXPENSE') {
-        summaryMap[tx.categoryId].expense += Number(tx.value || 0);
-      }
-    });
-    return Object.entries(summaryMap)
-      .map(([id, data]) => ({
-        id,
-        name: data.name,
-        revenue: data.revenue,
-        expense: data.expense,
-        saldo: data.revenue - data.expense,
-      }))
-      .filter((item) => item.revenue > 0 || item.expense > 0);
   };
-  const categorySummary = getCategorySummary();
+  const accountSummary = getAccountSummary();
 
   const handleOpenTransactionModal = () => {
     setSearchParams((prev) => {
@@ -1043,9 +1654,9 @@ const Resume: React.FC = () => {
                   icon={<AccountIcon sx={{ fontSize: '1.25rem' }} />}
                   iconBg="rgba(59, 130, 246, 0.1)"
                   iconColor="#3B82F6"
-                  badgeText="100% vs. mês anterior"
-                  badgeDirection="up"
-                  badgeType="blue"
+                  badgeText={balanceBadge.text}
+                  badgeDirection={balanceBadge.direction}
+                  badgeType={balanceBadge.type}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -1061,9 +1672,9 @@ const Resume: React.FC = () => {
                   }
                   iconBg="rgba(78, 190, 135, 0.1)"
                   iconColor="#4EBE87"
-                  badgeText="5% vs. mês anterior"
-                  badgeDirection="down"
-                  badgeType="green"
+                  badgeText={incomeBadge.text}
+                  badgeDirection={incomeBadge.direction}
+                  badgeType={incomeBadge.type}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -1078,15 +1689,15 @@ const Resume: React.FC = () => {
                   }
                   iconBg="rgba(224, 90, 90, 0.1)"
                   iconColor="#E05A5A"
-                  badgeText="12% vs. mês anterior"
-                  badgeDirection="down"
-                  badgeType="red"
+                  badgeText={expenseBadge.text}
+                  badgeDirection={expenseBadge.direction}
+                  badgeType={expenseBadge.type}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
                 <MiniMetricCard
                   label="Total movimentações"
-                  value={`R$ ${(totalMovementsCount * 80).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                  value={`R$ ${totalTransfers.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                   valueColor="#F4A261"
                   icon={
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F4A261" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -1096,9 +1707,9 @@ const Resume: React.FC = () => {
                   }
                   iconBg="rgba(244, 162, 97, 0.1)"
                   iconColor="#F4A261"
-                  badgeText="4% vs. mês anterior"
-                  badgeDirection="up"
-                  badgeType="yellow"
+                  badgeText={movementsBadge.text}
+                  badgeDirection={movementsBadge.direction}
+                  badgeType={movementsBadge.type}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -1109,27 +1720,27 @@ const Resume: React.FC = () => {
                   icon={<CardIcon sx={{ fontSize: '1.25rem' }} />}
                   iconBg="rgba(59, 130, 246, 0.1)"
                   iconColor="#3B82F6"
-                  badgeText="12% vs. mês anterior"
-                  badgeDirection="down"
+                  badgeText="0% vs. mês anterior"
+                  badgeDirection="up"
                   badgeType="blue"
                 />
               </Grid>
             </Grid>
           </Box>
 
-          {/* Row 3: Table summary of Categories */}
+          {/* Row 3: Table summary of Accounts */}
           <Card>
             <CardContent sx={{ p: 2.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#FFFFFF' }}>
-                  Resumo categorias conta
+                  Contas
                 </Typography>
                 <IconButton size="small" sx={{ color: '#7E8494' }}>
-                  <LaunchIcon fontSize="small" sx={{ fontSize: '1.1rem' }} />
+                  <OptionsIcon fontSize="small" />
                 </IconButton>
               </Box>
-              {categorySummary.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">Nenhuma movimentação para o período selecionado.</Typography>
+              {accountSummary.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">Nenhuma conta cadastrada.</Typography>
               ) : (
                 <TableContainer>
                   <Table size="small">
@@ -1143,23 +1754,48 @@ const Resume: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {categorySummary.map((row) => (
+                      {accountSummary.map((row) => (
                         <TableRow key={row.id} sx={{ '& td': { borderBottom: '1px solid rgba(255,255,255,0.01)', py: 1.2 } }}>
-                          <TableCell sx={{ color: '#FFFFFF', fontWeight: 500 }}>{row.name}</TableCell>
-                          <TableCell align="right" sx={{ color: row.revenue > 0 ? '#4EBE87' : '#7E8494' }}>
-                            {row.revenue > 0 ? `+ R$ ${row.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'R$ 0,00'}
+                          <TableCell sx={{ color: '#FFFFFF', fontWeight: 500 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              {renderBankLogo(row.institution, 20)}
+                              <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
+                                {row.name}
+                              </Typography>
+                            </Box>
                           </TableCell>
-                          <TableCell align="right" sx={{ color: row.expense > 0 ? '#E05A5A' : '#7E8494' }}>
-                            {row.expense > 0 ? `- R$ ${row.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'R$ 0,00'}
+                          <TableCell align="right" sx={{ color: row.receitas > 0 ? '#4EBE87' : '#7E8494', fontSize: '0.9rem' }}>
+                            R$ {row.receitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 600, color: row.saldo >= 0 ? '#4EBE87' : '#E05A5A' }}>
-                            R$ {row.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          <TableCell align="right" sx={{ color: row.despesas > 0 ? '#E05A5A' : '#7E8494', fontSize: '0.9rem' }}>
+                            R$ {row.despesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
-                          <TableCell align="right" sx={{ color: '#7E8494' }}>
-                            R$ {row.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          <TableCell align="right" sx={{ fontWeight: 600, color: row.saldo < 0 ? '#E05A5A' : '#FFFFFF', fontSize: '0.9rem' }}>
+                            {row.saldo < 0 ? '-' : ''}R$ {Math.abs(row.saldo).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600, color: row.previsto < 0 ? '#E05A5A' : '#FFFFFF', fontSize: '0.9rem' }}>
+                            {row.previsto < 0 ? '-' : ''}R$ {Math.abs(row.previsto).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
                         </TableRow>
                       ))}
+                      {/* Total row */}
+                      <TableRow sx={{ bgcolor: 'rgba(255,255,255,0.01)', '& td': { borderTop: '1px solid rgba(255,255,255,0.03)', borderBottom: 'none', py: 1.5 } }}>
+                        <TableCell sx={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.9rem' }}>
+                          Total
+                        </TableCell>
+                        <TableCell align="right" sx={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.9rem' }}>
+                          R$ {accountSummary.reduce((sum, row) => sum + row.receitas, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell align="right" sx={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.9rem' }}>
+                          R$ {accountSummary.reduce((sum, row) => sum + row.despesas, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell align="right" sx={{ color: accountSummary.reduce((sum, row) => sum + row.saldo, 0) < 0 ? '#E05A5A' : '#FFFFFF', fontWeight: 700, fontSize: '0.9rem' }}>
+                          {accountSummary.reduce((sum, row) => sum + row.saldo, 0) < 0 ? '-' : ''}R$ {Math.abs(accountSummary.reduce((sum, row) => sum + row.saldo, 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell align="right" sx={{ color: accountSummary.reduce((sum, row) => sum + row.previsto, 0) < 0 ? '#E05A5A' : '#FFFFFF', fontWeight: 700, fontSize: '0.9rem' }}>
+                          {accountSummary.reduce((sum, row) => sum + row.previsto, 0) < 0 ? '-' : ''}R$ {Math.abs(accountSummary.reduce((sum, row) => sum + row.previsto, 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                      </TableRow>
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -1494,706 +2130,1205 @@ const Resume: React.FC = () => {
         </form>
       </Dialog>
 
-      {/* DIALOG: Criar Transação (Mobills layout matching mockup exactly) */}
-      <Dialog
-        open={transactionOpen}
-        onClose={handleCloseTransactionModal}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '24px',
-            bgcolor: '#111217',
-            backgroundImage: 'none',
-            border: '1px solid rgba(255,255,255,0.04)',
-            color: '#FFFFFF',
-            '& .MuiFormLabel-asterisk': {
-              display: 'none'
-            }
-          }
-        }}
-      >
-        <form onSubmit={handleCreateTransaction}>
-          {/* Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <IconButton onClick={handleCloseTransactionModal} sx={{ color: '#7E8494' }}>
-                <CloseIcon />
-              </IconButton>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: '#FFFFFF' }}>
-                  {txType === 'REVENUE' ? 'Nova Receita' : txType === 'TRANSFER' ? 'Nova Transferência' : 'Nova Despesa'}
-                </Typography>
-                {isCardExpense && (
-                  <Typography variant="caption" sx={{ color: '#7E8494', display: 'block', mt: -0.2 }}>
-                    Cartão de Crédito
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Button
-                type="submit"
-                variant="contained"
-                sx={{
-                  borderRadius: '24px',
-                  px: 3.5,
-                  py: 0.7,
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  textTransform: 'none',
-                  bgcolor: txType === 'REVENUE' ? '#4EBE87' : txType === 'TRANSFER' ? '#F4A261' : (isCardExpense ? '#3B82F6' : '#E05A5A'),
-                  backgroundImage: 'none',
-                  boxShadow: 'none',
-                  '&:hover': {
-                    bgcolor: txType === 'REVENUE' ? '#3ea673' : txType === 'TRANSFER' ? '#e08f4c' : (isCardExpense ? '#2563EB' : '#c94747'),
-                    boxShadow: 'none'
-                  }
-                }}
-              >
-                Salvar
-              </Button>
-              <IconButton sx={{ color: '#7E8494' }}>
-                <OptionsIcon />
-              </IconButton>
-            </Box>
-          </Box>
+{/* DIALOG: Criar Transação (Mobills layout matching mockup exactly) */}
+<Dialog
+open={transactionOpen}
+onClose={handleCloseTransactionModal}
+maxWidth="md"
+fullWidth
+PaperProps={{
+sx: {
+borderRadius: '24px',
+bgcolor: '#111217',
+backgroundImage: 'none',
+border: '1px solid rgba(255,255,255,0.04)',
+color: '#FFFFFF',
+'& .MuiFormLabel-asterisk': {
+display: 'none'
+}
+}
+}}
+>
+<form onSubmit={handleCreateTransaction}>
+{/* Header */}
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+<IconButton onClick={handleCloseTransactionModal} sx={{ color: '#7E8494' }}>
+<CloseIcon />
+</IconButton>
+<Box>
+<Typography variant="h6" sx={{ fontWeight: 700, color: '#FFFFFF' }}>
+{isEditing 
+? (txType === 'REVENUE' ? 'Editar Receita' : txType === 'TRANSFER' ? 'Editar Transferência' : 'Editar Despesa') 
+: (txType === 'REVENUE' ? 'Nova Receita' : txType === 'TRANSFER' ? 'Nova Transferência' : 'Nova Despesa')
+}
+</Typography>
+{isCardExpense && (
+<Typography variant="caption" sx={{ color: '#7E8494', display: 'block', mt: -0.2 }}>
+Cartão de Crédito
+</Typography>
+)}
+</Box>
+</Box>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+<Button
+type="submit"
+variant="contained"
+sx={{
+borderRadius: '24px',
+px: 3.5,
+py: 0.7,
+fontWeight: 600,
+fontSize: '0.9rem',
+textTransform: 'none',
+bgcolor: txType === 'REVENUE' ? '#4EBE87' : txType === 'TRANSFER' ? '#F4A261' : (isCardExpense ? '#3B82F6' : '#E05A5A'),
+backgroundImage: 'none',
+boxShadow: 'none',
+'&:hover': {
+bgcolor: txType === 'REVENUE' ? '#3ea673' : txType === 'TRANSFER' ? '#e08f4c' : (isCardExpense ? '#2563EB' : '#c94747'),
+boxShadow: 'none'
+}
+}}
+>
+Salvar
+</Button>
+<IconButton sx={{ color: '#7E8494' }}>
+<OptionsIcon />
+</IconButton>
+</Box>
+</Box>
 
-          <DialogContent sx={{ p: 4 }}>
-            <Grid container spacing={4}>
-              {/* LEFT COLUMN */}
-              <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                {/* Perfil */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#7E8494', width: 36, height: 36 }}>
-                    <PersonIcon fontSize="small" />
-                  </Avatar>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Perfil"
-                    value="felipe"
-                    variant="standard"
-                    InputProps={{ disableUnderline: true }}
-                    sx={{
-                      '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                      '& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                    }}
-                  >
-                    <MenuItem value="felipe">Felipe</MenuItem>
-                  </TextField>
-                </Box>
+<DialogContent sx={{ p: 4 }}>
+<Grid container spacing={4}>
+{/* LEFT COLUMN */}
+<Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+{/* Perfil */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+<Avatar sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#7E8494', width: 36, height: 36 }}>
+<PersonIcon fontSize="small" />
+</Avatar>
+<TextField
+select
+fullWidth
+label="Perfil"
+value="felipe"
+variant="standard"
+InputProps={{ disableUnderline: true }}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+>
+<MenuItem value="felipe">Felipe</MenuItem>
+</TextField>
+</Box>
 
-                {/* Descrição */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                  <NotesIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                  <TextField
-                    fullWidth
-                    placeholder="Descrição"
-                    value={txDesc}
-                    onChange={(e) => setTxDesc(e.target.value)}
-                    required
-                    variant="standard"
-                    InputProps={{ disableUnderline: true }}
-                    sx={{ '& input': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' } }}
-                  />
-                </Box>
+{/* Descrição */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+<NotesIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
+<TextField
+fullWidth
+placeholder="Descrição"
+value={txDesc}
+onChange={(e) => setTxDesc(e.target.value)}
+required
+variant="standard"
+InputProps={{ disableUnderline: true }}
+sx={{ '& input': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' } }}
+/>
+</Box>
 
-                {/* Valor */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                  <TextField
-                    fullWidth
-                    type="text"
-                    placeholder="R$ 0,00"
-                    value={txValue}
-                    onChange={(e) => setTxValue(maskBRL(e.target.value))}
-                    required
-                    variant="standard"
-                    InputProps={{ disableUnderline: true }}
-                    sx={{ '& input': { color: '#FFFFFF', py: 0.5, fontSize: '1.45rem', fontWeight: 700 } }}
-                  />
-                  <IconButton size="small" sx={{ color: '#7E8494' }}>
-                    <HelpIcon fontSize="small" />
-                  </IconButton>
-                </Box>
+{/* Valor */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+<TextField
+fullWidth
+type="text"
+placeholder="R$ 0,00"
+value={txValue}
+onChange={(e) => setTxValue(maskBRL(e.target.value))}
+required
+variant="standard"
+InputProps={{ disableUnderline: true }}
+sx={{ '& input': { color: '#FFFFFF', py: 0.5, fontSize: '1.45rem', fontWeight: 700 } }}
+/>
+<IconButton size="small" sx={{ color: '#7E8494' }}>
+<HelpIcon fontSize="small" />
+</IconButton>
+</Box>
 
-                {/* Recorrência */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7E8494" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="23 4 23 10 17 10" />
-                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                    </svg>
-                    <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Não recorrente</Typography>
-                  </Box>
-                  <ChevronRightIcon sx={{ color: '#7E8494', fontSize: '1rem' }} />
-                </Box>
+{/* Recorrência */}
+<Box
+onClick={() => setRecurrenceDialogOpen(true)}
+sx={{
+display: 'flex',
+alignItems: 'center',
+justifyContent: 'space-between',
+py: 1.5,
+borderBottom: '1px solid rgba(255,255,255,0.03)',
+cursor: 'pointer',
+'&:hover': { opacity: 0.8 }
+}}
+>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7E8494" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+<polyline points="23 4 23 10 17 10" />
+<path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+</svg>
+<Box>
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
+{recurrenceType === 'NP' && 'Não recorrente'}
+{recurrenceType === 'FIXA' && 'Fixa mensal'}
+{recurrenceType === 'PARCELADA' && 'Parcelada'}
+</Typography>
+{recurrenceType === 'PARCELADA' && (
+<Typography sx={{ color: '#7E8494', fontSize: '0.78rem', mt: 0.25 }}>
+{(() => {
+const val = parseBRLToFloat(txValue);
+const instVal = valueType === 'total' ? (val / installmentsCount) : val;
+const instValStr = instVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+return `Em ${installmentsCount}x de R$ ${instValStr}`;
+})()}
+</Typography>
+)}
+</Box>
+</Box>
+{recurrenceType === 'PARCELADA' ? (
+<IconButton
+size="small"
+onClick={(e) => {
+e.stopPropagation();
+setRepeatConfigDialogOpen(true);
+}}
+sx={{ color: '#7E8494', '&:hover': { color: '#FFFFFF' } }}
+>
+<EditIcon sx={{ fontSize: '1rem' }} />
+</IconButton>
+) : (
+<ChevronRightIcon sx={{ color: '#7E8494', fontSize: '1rem' }} />
+)}
+</Box>
 
-                {/* Multicategorias */}
-                {txType !== 'TRANSFER' && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <CategoryIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                      <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Multicategorias</Typography>
-                    </Box>
-                    <Switch size="small" />
-                  </Box>
-                )}
+{/* Segmented Value Type Control (Imagem 4) */}
+{recurrenceType === 'PARCELADA' && (
+<Box sx={{ mt: 1, mb: 1 }}>
+<Box sx={{ display: 'flex', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '24px', overflow: 'hidden', p: '2px', bgcolor: 'rgba(0,0,0,0.15)' }}>
+<Box
+onClick={() => setValueType('total')}
+sx={{
+flex: 1,
+textAlign: 'center',
+py: 1,
+borderRadius: '22px',
+cursor: 'pointer',
+bgcolor: valueType === 'total' ? getThemeColor() : 'transparent',
+color: valueType === 'total' ? '#FFFFFF' : '#7E8494',
+fontWeight: 600,
+fontSize: '0.8rem',
+transition: 'all 0.2s'
+}}
+>
+Valor total
+</Box>
+<Box
+onClick={() => setValueType('parcela')}
+sx={{
+flex: 1,
+textAlign: 'center',
+py: 1,
+borderRadius: '22px',
+cursor: 'pointer',
+bgcolor: valueType === 'parcela' ? getThemeColor() : 'transparent',
+color: valueType === 'parcela' ? '#FFFFFF' : '#7E8494',
+fontWeight: 600,
+fontSize: '0.8rem',
+transition: 'all 0.2s'
+}}
+>
+Valor parcela
+</Box>
+</Box>
+</Box>
+)}
 
-                {/* Conditional Fields based on Card Expense vs Normal vs Transfer */}
-                {isCardExpense ? (
-                  <>
-                    {/* Cartão de Crédito */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                      <CardIcon sx={{ color: '#3B82F6', fontSize: '1.25rem' }} />
-                      <TextField
-                        select
-                        fullWidth
-                        label="Cartão de Crédito"
-                        value={txCardId}
-                        onChange={(e) => setTxCardId(e.target.value)}
-                        required
-                        variant="standard"
-                        InputProps={{ disableUnderline: true }}
-                        sx={{
-                          '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                          '& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                        }}
-                      >
-                        {cards.map((c) => (
-                          <MenuItem key={c.id} value={c.id}>
-                            {c.name} ({c.brand})
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    </Box>
+{/* Multicategorias */}
+{txType === 'EXPENSE' && (
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+<CategoryIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Multicategorias</Typography>
+</Box>
+<Switch size="small" />
+</Box>
+)}
 
-                    {/* Fatura */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                      <CalendarIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                      <TextField
-                        select
-                        fullWidth
-                        label="Fatura"
-                        value="jul_2026"
-                        variant="standard"
-                        InputProps={{ disableUnderline: true }}
-                        sx={{
-                          '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                          '& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                        }}
-                      >
-                        <MenuItem value="jul_2026">Julho, 2026</MenuItem>
-                        <MenuItem value="ago_2026">Agosto, 2026</MenuItem>
-                      </TextField>
-                    </Box>
-                  </>
-                ) : txType === 'TRANSFER' ? (
-                  <>
-                    {/* Perfil de Origem */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#7E8494', width: 36, height: 36 }}>
-                        <PersonIcon fontSize="small" />
-                      </Avatar>
-                      <TextField
-                        select
-                        fullWidth
-                        label="Perfil de Origem"
-                        value="felipe"
-                        variant="standard"
-                        InputProps={{ disableUnderline: true }}
-                        sx={{
-                          '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                          '& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                        }}
-                      >
-                        <MenuItem value="felipe">Felipe</MenuItem>
-                      </TextField>
-                    </Box>
+{/* Conditional Fields based on Card Expense vs Normal vs Transfer */}
+{isCardExpense ? (
+<>
+{/* Cartão de Crédito */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+{(() => {
+const selectedCard = cards.find((c) => c.id === txCardId);
+return (
+<Box sx={{ display: 'flex', width: 24, justifyContent: 'center', alignItems: 'center' }}>
+{selectedCard ? renderBankLogo(selectedCard.bank) : <CardIcon sx={{ color: '#3B82F6', fontSize: '1.25rem' }} />}
+</Box>
+);
+})()}
+<TextField
+select
+fullWidth
+label="Cartão de Crédito"
+value={txCardId}
+onChange={(e) => setTxCardId(e.target.value)}
+required
+variant="standard"
+InputProps={{ disableUnderline: true }}
+SelectProps={{
+renderValue: (val) => {
+const c = cards.find((card) => card.id === val);
+return c ? c.name : '';
+}
+}}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+>
+{cards.map((c) => (
+<MenuItem key={c.id} value={c.id}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+{renderBankLogo(c.bank)}
+<Typography>{c.name}</Typography>
+</Box>
+</MenuItem>
+))}
+</TextField>
+</Box>
 
-                    {/* Conta de Origem */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                      <AccountIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                      <TextField
-                        select
-                        fullWidth
-                        label="Conta de Origem"
-                        value={txAccountId}
-                        onChange={(e) => setTxAccountId(e.target.value)}
-                        required
-                        variant="standard"
-                        InputProps={{ disableUnderline: true }}
-                        sx={{
-                          '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                          '& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                        }}
-                      >
-                        {accounts.map((acc) => (
-                          <MenuItem key={acc.id} value={acc.id}>
-                            {acc.name}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    </Box>
+{/* Fatura */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+<CalendarIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
+<TextField
+select
+fullWidth
+label="Fatura"
+value="jul_2026"
+variant="standard"
+InputProps={{ disableUnderline: true }}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+>
+<MenuItem value="jul_2026">Julho, 2026</MenuItem>
+<MenuItem value="ago_2026">Agosto, 2026</MenuItem>
+</TextField>
+</Box>
+</>
+) : txType === 'TRANSFER' ? (
+<>
+{/* Perfil de Origem */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+<Avatar sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#7E8494', width: 36, height: 36 }}>
+<PersonIcon fontSize="small" />
+</Avatar>
+<TextField
+select
+fullWidth
+label="Perfil de Origem"
+value="felipe"
+variant="standard"
+InputProps={{ disableUnderline: true }}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+>
+<MenuItem value="felipe">Felipe</MenuItem>
+</TextField>
+</Box>
 
-                    {/* Perfil de Destino */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#7E8494', width: 36, height: 36 }}>
-                        <PersonIcon fontSize="small" />
-                      </Avatar>
-                      <TextField
-                        select
-                        fullWidth
-                        label="Perfil de Destino"
-                        value="felipe"
-                        variant="standard"
-                        InputProps={{ disableUnderline: true }}
-                        sx={{
-                          '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                          '& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                        }}
-                      >
-                        <MenuItem value="felipe">Felipe</MenuItem>
-                      </TextField>
-                    </Box>
+{/* Conta de Origem */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+{(() => {
+const selectedAcc = accounts.find((a) => a.id === txAccountId);
+return (
+<Box sx={{ display: 'flex', width: 24, justifyContent: 'center', alignItems: 'center' }}>
+{selectedAcc ? renderBankLogo(selectedAcc.institution) : <AccountIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />}
+</Box>
+);
+})()}
+<TextField
+select
+fullWidth
+label="Conta de Origem"
+value={txAccountId}
+onChange={(e) => setTxAccountId(e.target.value)}
+required
+variant="standard"
+InputProps={{ disableUnderline: true }}
+SelectProps={{
+renderValue: (val) => {
+const acc = accounts.find((a) => a.id === val);
+return acc ? acc.name : '';
+}
+}}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+>
+{accounts.map((acc) => (
+<MenuItem key={acc.id} value={acc.id}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+{renderBankLogo(acc.institution)}
+<Typography>{acc.name}</Typography>
+</Box>
+</MenuItem>
+))}
+</TextField>
+</Box>
 
-                    {/* Conta de Destino */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                      <AccountIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                      <TextField
-                        select
-                        fullWidth
-                        label="Conta de Destino"
-                        value={txDestAccountId}
-                        onChange={(e) => setTxDestAccountId(e.target.value)}
-                        required
-                        variant="standard"
-                        InputProps={{ disableUnderline: true }}
-                        sx={{
-                          '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                          '& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                        }}
-                      >
-                        {accounts.map((acc) => (
-                          <MenuItem key={acc.id} value={acc.id}>
-                            {acc.name}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    </Box>
-                  </>
-                ) : (
-                  <>
-                    {/* Data de Vencimento */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        py: 1,
-                        borderBottom: '1px solid rgba(255,255,255,0.03)'
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <CalendarIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                        <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
-                          Data de Vencimento
-                        </Typography>
-                      </Box>
-                      <Box
-                        onClick={() => {
-                          const parsed = txDate ? new Date(txDate + 'T12:00:00') : new Date();
-                          setTempDate(isNaN(parsed.getTime()) ? new Date() : parsed);
-                          setCalendarViewDate(isNaN(parsed.getTime()) ? new Date() : parsed);
-                          setDatePickerOpen(true);
-                        }}
-                        sx={{
-                          cursor: 'pointer',
-                          '&:hover': { opacity: 0.8 }
-                        }}
-                      >
-                        <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
-                          {formatDateToPtBr(txDate)}
-                        </Typography>
-                      </Box>
-                    </Box>
+{/* Perfil de Destino */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+<Avatar sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#7E8494', width: 36, height: 36 }}>
+<PersonIcon fontSize="small" />
+</Avatar>
+<TextField
+select
+fullWidth
+label="Perfil de Destino"
+value="felipe"
+variant="standard"
+InputProps={{ disableUnderline: true }}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+>
+<MenuItem value="felipe">Felipe</MenuItem>
+</TextField>
+</Box>
 
-                    {/* Efetivada Switch */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7E8494" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                          <polyline points="22 4 12 14.01 9 11.01" />
-                        </svg>
-                        <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Efetivada</Typography>
-                      </Box>
-                      <Switch
-                        size="small"
-                        defaultChecked
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: txType === 'REVENUE' ? '#4EBE87' : '#E05A5A',
-                            '& + .MuiSwitch-track': {
-                              backgroundColor: txType === 'REVENUE' ? '#4EBE87' : '#E05A5A',
-                            }
-                          }
-                        }}
-                      />
-                    </Box>
-                  </>
-                )}
+{/* Conta de Destino */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+{(() => {
+const selectedAcc = accounts.find((a) => a.id === txDestAccountId);
+return (
+<Box sx={{ display: 'flex', width: 24, justifyContent: 'center', alignItems: 'center' }}>
+{selectedAcc ? renderBankLogo(selectedAcc.institution) : <AccountIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />}
+</Box>
+);
+})()}
+<TextField
+select
+fullWidth
+label="Conta de Destino"
+value={txDestAccountId}
+onChange={(e) => setTxDestAccountId(e.target.value)}
+required
+variant="standard"
+InputProps={{ disableUnderline: true }}
+SelectProps={{
+renderValue: (val) => {
+const acc = accounts.find((a) => a.id === val);
+return acc ? acc.name : '';
+}
+}}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+>
+{accounts.map((acc) => (
+<MenuItem key={acc.id} value={acc.id}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+{renderBankLogo(acc.institution)}
+<Typography>{acc.name}</Typography>
+</Box>
+</MenuItem>
+))}
+</TextField>
+</Box>
+</>
+) : (
+<>
+{/* Data de Vencimento */}
+<Box
+sx={{
+display: 'flex',
+alignItems: 'center',
+justifyContent: 'space-between',
+py: 1,
+borderBottom: '1px solid rgba(255,255,255,0.03)'
+}}
+>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+<CalendarIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
+Data de Vencimento
+</Typography>
+</Box>
+<Box
+onClick={() => {
+const parsed = txDueDate ? new Date(txDueDate + 'T12:00:00') : new Date();
+setTempDate(isNaN(parsed.getTime()) ? new Date() : parsed);
+setCalendarViewDate(isNaN(parsed.getTime()) ? new Date() : parsed);
+setDatePickerTarget('VENCIMENTO');
+setDatePickerOpen(true);
+}}
+sx={{
+cursor: 'pointer',
+'&:hover': { opacity: 0.8 }
+}}
+>
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
+{formatDateToPtBr(txDueDate)}
+</Typography>
+</Box>
+</Box>
 
-                {/* Common non-transfer Category / Subcategory / Account */}
-                {txType !== 'TRANSFER' && (
-                  <>
-                    {/* Categoria */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                      {(() => {
-                        const selectedCat = categories.find((c) => c.id === txCategoryId);
-                        const color = selectedCat?.color || '#7E8494';
-                        return (
-                          <Box sx={{ display: 'flex', color: color, width: 24, justifyContent: 'center', alignItems: 'center' }}>
-                            {selectedCat ? getCategoryIcon(selectedCat.icon, selectedCat.name) : <CategoryIcon sx={{ fontSize: '1.25rem' }} />}
-                          </Box>
-                        );
-                      })()}
-                      <TextField
-                        select
-                        fullWidth
-                        label="Categoria"
-                        value={txCategoryId}
-                        onChange={(e) => {
-                          setTxCategoryId(e.target.value);
-                          setTxSubcategoryId('');
-                        }}
-                        required
-                        variant="standard"
-                        InputProps={{ disableUnderline: true }}
-                        SelectProps={{
-                          renderValue: (val) => {
-                            const cat = categories.find((c) => c.id === val);
-                            return cat ? cat.name : '';
-                          }
-                        }}
-                        sx={{
-                          '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                          '& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                        }}
-                      >
-                        {categories
-                          .filter((cat) => cat.type === txType && !cat.parentCategoryId)
-                          .map((cat) => (
-                            <MenuItem key={cat.id} value={cat.id}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Box sx={{ display: 'flex', color: cat.color || '#7E8494' }}>
-                                  {getCategoryIcon(cat.icon, cat.name)}
-                                </Box>
-                                {cat.name}
-                              </Box>
-                            </MenuItem>
-                          ))}
-                      </TextField>
-                      <IconButton size="small" onClick={() => {
-                        setQuickCatColor('#7E8494');
-                        setQuickCatIcon('HelpIcon');
-                        setQuickCatOpen(true);
-                      }} sx={{ color: '#7E8494' }}>
-                        <AddIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
+{/* Efetivada Switch */}
+<Box
+onClick={() => {
+const checked = !txEffective;
+setTxEffective(checked);
+if (checked) {
+setTxEffectiveDate(new Date().toISOString().split('T')[0]);
+}
+}}
+sx={{
+display: 'flex',
+alignItems: 'center',
+justifyContent: 'space-between',
+py: 1.25,
+px: 1,
+mx: -1,
+borderRadius: '8px',
+borderBottom: '1px solid rgba(255,255,255,0.03)',
+cursor: 'pointer',
+'&:hover': {
+bgcolor: 'rgba(255,255,255,0.04)'
+},
+transition: 'background-color 0.2s, opacity 0.2s',
+'&:active': {
+opacity: 0.8
+}
+}}
+>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+{txEffective ? (
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7E8494" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+<polyline points="22 4 12 14.01 9 11.01" />
+</svg>
+) : (
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7E8494" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+<circle cx="12" cy="12" r="10" />
+<polyline points="12 6 12 12 16 12" />
+</svg>
+)}
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
+{txEffective ? 'Efetivada' : 'Pendente'}
+</Typography>
+</Box>
+<Switch
+size="small"
+checked={txEffective}
+readOnly
+sx={{
+pointerEvents: 'none',
+'& .MuiSwitch-switchBase.Mui-checked': {
+color: txType === 'REVENUE' ? '#4EBE87' : '#E05A5A',
+'& + .MuiSwitch-track': {
+backgroundColor: txType === 'REVENUE' ? '#4EBE87' : '#E05A5A',
+}
+}
+}}
+/>
+</Box>
+</>
+)}
 
-                    {/* Subcategoria */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                      {(() => {
-                        const selectedSub = categories.find((c) => c.id === txSubcategoryId);
-                        const color = selectedSub?.color || '#7E8494';
-                        return (
-                          <Box sx={{ display: 'flex', color: color, width: 24, justifyContent: 'center', alignItems: 'center' }}>
-                            {selectedSub ? getCategoryIcon(selectedSub.icon, selectedSub.name) : <SubcategoryIcon sx={{ fontSize: '1.25rem' }} />}
-                          </Box>
-                        );
-                      })()}
-                      <TextField
-                        select
-                        fullWidth
-                        label="Subcategoria"
-                        value={txSubcategoryId || ''}
-                        onChange={(e) => setTxSubcategoryId(e.target.value)}
-                        disabled={!txCategoryId || categories.filter((c) => c.parentCategoryId === txCategoryId).length === 0}
-                        variant="standard"
-                        InputProps={{ disableUnderline: true }}
-                        SelectProps={{
-                          renderValue: (val) => {
-                            const sub = categories.find((c) => c.id === val);
-                            return sub ? sub.name : '';
-                          }
-                        }}
-                        sx={{
-                          '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                          '& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                        }}
-                      >
-                        {txSubcategoryId === '' && <MenuItem value="" sx={{ display: 'none' }} />}
-                        {categories
-                          .filter((c) => c.parentCategoryId === txCategoryId)
-                          .map((sub) => (
-                            <MenuItem key={sub.id} value={sub.id}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Box sx={{ display: 'flex', color: sub.color || '#7E8494' }}>
-                                  {getCategoryIcon(sub.icon, sub.name)}
-                                </Box>
-                                {sub.name}
-                              </Box>
-                            </MenuItem>
-                          ))}
-                      </TextField>
-                      <IconButton size="small" onClick={() => {
-                        const parent = categories.find(c => c.id === txCategoryId);
-                        setQuickSubColor(parent?.color || '#7E8494');
-                        setQuickSubIcon('HelpIcon');
-                        setQuickSubOpen(true);
-                      }} disabled={!txCategoryId} sx={{ color: '#7E8494' }}>
-                        <AddIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
+{/* Common non-transfer Category / Subcategory / Account */}
+{txType !== 'TRANSFER' && (
+<>
+{/* Categoria */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+{(() => {
+const selectedCat = categories.find((c) => c.id === txCategoryId);
+const color = selectedCat?.color || '#7E8494';
+return (
+<Box sx={{ display: 'flex', color: color, width: 24, justifyContent: 'center', alignItems: 'center' }}>
+{selectedCat ? getCategoryIcon(selectedCat.icon, selectedCat.name) : <CategoryIcon sx={{ fontSize: '1.25rem' }} />}
+</Box>
+);
+})()}
+<TextField
+select
+fullWidth
+label="Categoria"
+value={txCategoryId}
+onChange={(e) => {
+setTxCategoryId(e.target.value);
+setTxSubcategoryId('');
+}}
+required
+variant="standard"
+InputProps={{ disableUnderline: true }}
+SelectProps={{
+renderValue: (val) => {
+const cat = categories.find((c) => c.id === val);
+return cat ? cat.name : '';
+}
+}}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+>
+{categories
+.filter((cat) => cat.type === txType && !cat.parentCategoryId)
+.map((cat) => (
+<MenuItem key={cat.id} value={cat.id}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+<Box sx={{ display: 'flex', color: cat.color || '#7E8494' }}>
+{getCategoryIcon(cat.icon, cat.name)}
+</Box>
+{cat.name}
+</Box>
+</MenuItem>
+))}
+</TextField>
+<IconButton size="small" onClick={() => {
+setQuickCatColor('#7E8494');
+setQuickCatIcon('HelpIcon');
+setQuickCatOpen(true);
+}} sx={{ color: '#7E8494' }}>
+<AddIcon fontSize="small" />
+</IconButton>
+</Box>
 
-                    {/* Conta */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                      <AccountIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                      <TextField
-                        select
-                        fullWidth
-                        label="Conta"
-                        value={txAccountId}
-                        onChange={(e) => setTxAccountId(e.target.value)}
-                        required={!isCardExpense}
-                        variant="standard"
-                        InputProps={{ disableUnderline: true }}
-                        sx={{
-                          '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                          '& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                        }}
-                      >
-                        {accounts.map((acc) => (
-                          <MenuItem key={acc.id} value={acc.id}>
-                            {acc.name}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    </Box>
-                  </>
-                )}
-              </Grid>
+{/* Subcategoria */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+{(() => {
+const selectedSub = categories.find((c) => c.id === txSubcategoryId);
+const color = selectedSub?.color || '#7E8494';
+return (
+<Box sx={{ display: 'flex', color: color, width: 24, justifyContent: 'center', alignItems: 'center' }}>
+{selectedSub ? getCategoryIcon(selectedSub.icon, selectedSub.name) : <SubcategoryIcon sx={{ fontSize: '1.25rem' }} />}
+</Box>
+);
+})()}
+<TextField
+select
+fullWidth
+label="Subcategoria"
+value={txSubcategoryId || ''}
+onChange={(e) => setTxSubcategoryId(e.target.value)}
+disabled={!txCategoryId || categories.filter((c) => c.parentCategoryId === txCategoryId).length === 0}
+variant="standard"
+InputProps={{ disableUnderline: true }}
+SelectProps={{
+renderValue: (val) => {
+const sub = categories.find((c) => c.id === val);
+return sub ? sub.name : '';
+}
+}}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+>
+{txSubcategoryId === '' && <MenuItem value="" sx={{ display: 'none' }} />}
+{categories
+.filter((c) => c.parentCategoryId === txCategoryId)
+.map((sub) => (
+<MenuItem key={sub.id} value={sub.id}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+<Box sx={{ display: 'flex', color: sub.color || '#7E8494' }}>
+{getCategoryIcon(sub.icon, sub.name)}
+</Box>
+{sub.name}
+</Box>
+</MenuItem>
+))}
+</TextField>
+<IconButton size="small" onClick={() => {
+const parent = categories.find(c => c.id === txCategoryId);
+setQuickSubColor(parent?.color || '#7E8494');
+setQuickSubIcon('HelpIcon');
+setQuickSubOpen(true);
+}} disabled={!txCategoryId} sx={{ color: '#7E8494' }}>
+<AddIcon fontSize="small" />
+</IconButton>
+</Box>
 
-              {/* RIGHT COLUMN */}
-              <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                {/* Tags */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                    <TagIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                    <TextField
-                      fullWidth
-                      placeholder="Tags"
-                      value={txTags}
-                      onChange={(e) => setTxTags(e.target.value)}
-                      variant="standard"
-                      InputProps={{ disableUnderline: true }}
-                      sx={{ '& input': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' } }}
-                    />
-                  </Box>
-                  <Typography sx={{ color: '#7E8494', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    Selecionar <ChevronRightIcon sx={{ fontSize: '0.8rem' }} />
-                  </Typography>
-                </Box>
+{/* Conta */}
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+{(() => {
+const selectedAcc = accounts.find((a) => a.id === txAccountId);
+return (
+<Box sx={{ display: 'flex', width: 24, justifyContent: 'center', alignItems: 'center' }}>
+{selectedAcc ? renderBankLogo(selectedAcc.institution) : <AccountIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />}
+</Box>
+);
+})()}
+<TextField
+select
+fullWidth
+label="Conta"
+value={txAccountId}
+onChange={(e) => setTxAccountId(e.target.value)}
+required={!isCardExpense}
+variant="standard"
+InputProps={{ disableUnderline: true }}
+SelectProps={{
+renderValue: (val) => {
+const acc = accounts.find((a) => a.id === val);
+return acc ? acc.name : '';
+}
+}}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& .MuiSelect-select': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+>
+{accounts.map((acc) => (
+<MenuItem key={acc.id} value={acc.id}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+{renderBankLogo(acc.institution)}
+<Typography>{acc.name}</Typography>
+</Box>
+</MenuItem>
+))}
+</TextField>
+</Box>
+</>
+)}
+</Grid>
 
-                {/* Data de Lançamento */}
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    py: 1,
-                    borderBottom: '1px solid rgba(255,255,255,0.03)'
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <CalendarIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                    <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
-                      Data de Lançamento
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-                    <Box
-                      onClick={() => {
-                        const parsed = txDate ? new Date(txDate + 'T12:00:00') : new Date();
-                        setTempDate(isNaN(parsed.getTime()) ? new Date() : parsed);
-                        setCalendarViewDate(isNaN(parsed.getTime()) ? new Date() : parsed);
-                        setDatePickerOpen(true);
-                      }}
-                      sx={{
-                        cursor: 'pointer',
-                        '&:hover': { opacity: 0.8 }
-                      }}
-                    >
-                      <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
-                        {formatDateToPtBr(txDate)}
-                      </Typography>
-                    </Box>
-                    <Box
-                      onClick={() => {
-                        const timeParts = txTimeVal.split(':');
-                        if (timeParts.length === 2) {
-                          setTempHour(parseInt(timeParts[0]));
-                          setTempMinute(parseInt(timeParts[1]));
-                        }
-                        setTimePickerMode('HOURS');
-                        setTimePickerViewMode('DIAL');
-                        setTimePickerOpen(true);
-                      }}
-                      sx={{
-                        cursor: 'pointer',
-                        width: '45px',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        '&:hover': { opacity: 0.8 }
-                      }}
-                    >
-                      <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
-                        {txTimeVal}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
+{/* RIGHT COLUMN */}
+<Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+{/* Tags */}
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+<TagIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
+<TextField
+fullWidth
+placeholder="Tags"
+value={txTags}
+onChange={(e) => setTxTags(e.target.value)}
+variant="standard"
+InputProps={{ disableUnderline: true }}
+sx={{ '& input': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' } }}
+/>
+</Box>
+<Typography sx={{ color: '#7E8494', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+Selecionar <ChevronRightIcon sx={{ fontSize: '0.8rem' }} />
+</Typography>
+</Box>
 
-                {/* Data de Efetivação */}
-                {txType === 'TRANSFER' || !isCardExpense ? (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      py: 1,
-                      borderBottom: '1px solid rgba(255,255,255,0.03)'
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <CalendarIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                      <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
-                        Data de Efetivação
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-                      <Box
-                        onClick={() => {
-                          const parsed = txDate ? new Date(txDate + 'T12:00:00') : new Date();
-                          setTempDate(isNaN(parsed.getTime()) ? new Date() : parsed);
-                          setCalendarViewDate(isNaN(parsed.getTime()) ? new Date() : parsed);
-                          setDatePickerOpen(true);
-                        }}
-                        sx={{
-                          cursor: 'pointer',
-                          '&:hover': { opacity: 0.8 }
-                        }}
-                      >
-                        <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
-                          {formatDateToPtBr(txDate)}
-                        </Typography>
-                      </Box>
-                      {/* Empty Spacer to align with date grid when time is present above */}
-                      <Box sx={{ width: '45px' }} />
-                    </Box>
-                  </Box>
-                ) : null}
+{/* Data de Lançamento */}
+<Box
+sx={{
+display: 'flex',
+alignItems: 'center',
+justifyContent: 'space-between',
+py: 1,
+borderBottom: '1px solid rgba(255,255,255,0.03)'
+}}
+>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+<CalendarIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
+Data de Lançamento
+</Typography>
+</Box>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+<Box
+onClick={() => {
+const parsed = txDate ? new Date(txDate + 'T12:00:00') : new Date();
+setTempDate(isNaN(parsed.getTime()) ? new Date() : parsed);
+setCalendarViewDate(isNaN(parsed.getTime()) ? new Date() : parsed);
+setDatePickerTarget('LANCAMENTO');
+setDatePickerOpen(true);
+}}
+sx={{
+cursor: 'pointer',
+'&:hover': { opacity: 0.8 }
+}}
+>
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
+{formatDateToPtBr(txDate)}
+</Typography>
+</Box>
+<Box
+onClick={() => {
+const timeParts = txTimeVal.split(':');
+if (timeParts.length === 2) {
+setTempHour(parseInt(timeParts[0]));
+setTempMinute(parseInt(timeParts[1]));
+}
+setTimePickerMode('HOURS');
+setTimePickerViewMode('DIAL');
+setTimePickerOpen(true);
+}}
+sx={{
+cursor: 'pointer',
+width: '45px',
+display: 'flex',
+justifyContent: 'center',
+alignItems: 'center',
+'&:hover': { opacity: 0.8 }
+}}
+>
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
+{txTimeVal}
+</Typography>
+</Box>
+</Box>
+</Box>
 
-                {/* Encargos */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7E8494" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                    <line x1="2" y1="10" x2="22" y2="10" />
-                  </svg>
-                  <TextField
-                    fullWidth
-                    label="Encargos"
-                    value="R$ 0,00"
-                    variant="standard"
-                    InputProps={{ disableUnderline: true, readOnly: true }}
-                    sx={{
-                      '& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
-                      '& input': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
-                    }}
-                  />
-                </Box>
+{/* Data de Efetivação */}
+{txEffective && (txType === 'TRANSFER' || !isCardExpense) ? (
+<Box
+sx={{
+display: 'flex',
+alignItems: 'center',
+justifyContent: 'space-between',
+py: 1,
+borderBottom: '1px solid rgba(255,255,255,0.03)'
+}}
+>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+<CalendarIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
+Data de Efetivação
+</Typography>
+</Box>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+<Box
+onClick={() => {
+const parsed = txEffectiveDate ? new Date(txEffectiveDate + 'T12:00:00') : new Date();
+setTempDate(isNaN(parsed.getTime()) ? new Date() : parsed);
+setCalendarViewDate(isNaN(parsed.getTime()) ? new Date() : parsed);
+setDatePickerTarget('EFETIVACAO');
+setDatePickerOpen(true);
+}}
+sx={{
+cursor: 'pointer',
+'&:hover': { opacity: 0.8 }
+}}
+>
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>
+{formatDateToPtBr(txEffectiveDate)}
+</Typography>
+</Box>
+{/* Empty Spacer to align with date grid when time is present above */}
+<Box sx={{ width: '45px' }} />
+</Box>
+</Box>
+) : null}
 
-                {/* Observações */}
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
-                  <NotesIcon sx={{ color: '#7E8494', fontSize: '1.25rem', mt: 1 }} />
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={1}
-                    placeholder="Observações e hashtags"
-                    value={txNotes}
-                    onChange={(e) => setTxNotes(e.target.value)}
-                    variant="standard"
-                    InputProps={{ disableUnderline: true }}
-                    sx={{ '& textarea': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' } }}
-                  />
-                </Box>
+{/* Encargos */}
+{txType === 'EXPENSE' && (
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7E8494" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+<rect x="2" y="4" width="20" height="16" rx="2" />
+<line x1="2" y1="10" x2="22" y2="10" />
+</svg>
+<TextField
+fullWidth
+label="Encargos"
+value="R$ 0,00"
+variant="standard"
+InputProps={{ disableUnderline: true, readOnly: true }}
+sx={{
+'& .MuiInputLabel-root': { color: '#7E8494', fontSize: '0.825rem' },
+'& input': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' }
+}}
+/>
+</Box>
+)}
 
-                {/* Não efetivar automaticamente */}
-                {txType !== 'TRANSFER' && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <HelpIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                      <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Não efetivar automaticamente</Typography>
-                    </Box>
-                    <Switch size="small" />
-                  </Box>
-                )}
+{/* Observações */}
+<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.03)', pb: 0.5 }}>
+<NotesIcon sx={{ color: '#7E8494', fontSize: '1.25rem', mt: 1 }} />
+<TextField
+fullWidth
+multiline
+rows={1}
+placeholder="Observações e hashtags"
+value={txNotes}
+onChange={(e) => setTxNotes(e.target.value)}
+variant="standard"
+InputProps={{ disableUnderline: true }}
+sx={{ '& textarea': { color: '#FFFFFF', py: 0.5, fontSize: '0.95rem' } }}
+/>
+</Box>
 
-                {/* Adicionar Anexo */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <AttachmentIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
-                    <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Adicionar anexo</Typography>
-                  </Box>
-                </Box>
 
-                {/* Ignore flags & bottom switches */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, mt: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography sx={{ color: '#7E8494', fontSize: '0.85rem', fontWeight: 500 }}>Ignorar nos gráficos</Typography>
-                    <Switch size="small" />
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography sx={{ color: '#7E8494', fontSize: '0.85rem', fontWeight: 500 }}>Ignorar em Orçamentos</Typography>
-                    <Switch size="small" />
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography sx={{ color: '#7E8494', fontSize: '0.85rem', fontWeight: 500 }}>Ignorar em Economia Mensal</Typography>
-                    <Switch size="small" />
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography sx={{ color: '#7E8494', fontSize: '0.85rem', fontWeight: 500 }}>Ignorar nos totais</Typography>
-                    <Switch size="small" />
-                  </Box>
-                  {isCardExpense && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Typography sx={{ color: '#7E8494', fontSize: '0.85rem', fontWeight: 500 }}>Ignorar no limite do cartão</Typography>
-                      <Switch size="small" />
-                    </Box>
-                  )}
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
-                    <Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 600 }}>Salvar e continuar</Typography>
-                    <Switch size="small" />
-                  </Box>
-                </Box>
-              </Grid>
-            </Grid>
-          </DialogContent>
-        </form>
-      </Dialog>
+
+{/* Não efetivar automaticamente */}
+{txType !== 'TRANSFER' && (
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+<HelpIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Não efetivar automaticamente</Typography>
+</Box>
+<Switch size="small" />
+</Box>
+)}
+
+{/* Adicionar Anexo */}
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1, borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer' }}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+<AttachmentIcon sx={{ color: '#7E8494', fontSize: '1.25rem' }} />
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Adicionar anexo</Typography>
+</Box>
+</Box>
+
+{/* Ignore flags & bottom switches */}
+<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, mt: 1 }}>
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+<Typography sx={{ color: '#7E8494', fontSize: '0.85rem', fontWeight: 500 }}>Ignorar nos gráficos</Typography>
+<Switch size="small" />
+</Box>
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+<Typography sx={{ color: '#7E8494', fontSize: '0.85rem', fontWeight: 500 }}>Ignorar em Orçamentos</Typography>
+<Switch size="small" />
+</Box>
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+<Typography sx={{ color: '#7E8494', fontSize: '0.85rem', fontWeight: 500 }}>Ignorar em Economia Mensal</Typography>
+<Switch size="small" />
+</Box>
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+<Typography sx={{ color: '#7E8494', fontSize: '0.85rem', fontWeight: 500 }}>Ignorar nos totais</Typography>
+<Switch size="small" />
+</Box>
+{isCardExpense && (
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+<Typography sx={{ color: '#7E8494', fontSize: '0.85rem', fontWeight: 500 }}>Ignorar no limite do cartão</Typography>
+<Switch size="small" />
+</Box>
+)}
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 600 }}>Salvar e continuar</Typography>
+<Switch size="small" />
+</Box>
+</Box>
+</Grid>
+</Grid>
+</DialogContent>
+</form>
+</Dialog>
+
+{/* DIALOG: Recorrência Opções (Imagem 2) */}
+<Dialog
+open={recurrenceDialogOpen}
+onClose={() => setRecurrenceDialogOpen(false)}
+PaperProps={{
+sx: {
+borderRadius: '16px',
+bgcolor: '#1b1c21',
+backgroundImage: 'none',
+color: '#FFFFFF',
+maxWidth: '320px',
+width: '100%',
+p: 2
+}
+}}
+>
+<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+{[
+{ value: 'NP', label: 'Não recorrente' },
+{ value: 'PARCELADA', label: 'Parcelar ou repetir' },
+{ value: 'FIXA', label: 'Fixa mensal' }
+].map((opt) => {
+const isSelected = recurrenceType === opt.value;
+return (
+<Box
+key={opt.value}
+onClick={() => {
+setRecurrenceType(opt.value as any);
+setRecurrenceDialogOpen(false);
+if (opt.value === 'PARCELADA') {
+setRepeatConfigDialogOpen(true);
+}
+}}
+sx={{
+display: 'flex',
+alignItems: 'center',
+gap: 2,
+py: 1.5,
+px: 2,
+borderRadius: '8px',
+cursor: 'pointer',
+'&:hover': { bgcolor: 'rgba(255,255,255,0.03)' }
+}}
+>
+<Box
+sx={{
+width: 18,
+height: 18,
+borderRadius: '50%',
+border: `2px solid ${isSelected ? getThemeColor() : '#7E8494'}`,
+display: 'flex',
+alignItems: 'center',
+justifyContent: 'center',
+transition: 'border-color 0.2s'
+}}
+>
+{isSelected && (
+<Box
+sx={{
+width: 10,
+height: 10,
+borderRadius: '50%',
+bgcolor: getThemeColor()
+}}
+/>
+)}
+</Box>
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.925rem', fontWeight: 500 }}>
+{opt.label}
+</Typography>
+</Box>
+);
+})}
+</Box>
+</Dialog>
+
+{/* DIALOG: Configurar Repetição (Imagem 3) */}
+<Dialog
+open={repeatConfigDialogOpen}
+onClose={() => setRepeatConfigDialogOpen(false)}
+PaperProps={{
+sx: {
+borderRadius: '16px',
+bgcolor: '#1b1c21',
+backgroundImage: 'none',
+color: '#FFFFFF',
+maxWidth: '380px',
+width: '100%',
+p: 3
+}
+}}
+>
+<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+{/* Header */}
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+<IconButton size="small" onClick={() => setRepeatConfigDialogOpen(false)} sx={{ color: '#FFFFFF' }}>
+<CloseIcon />
+</IconButton>
+<Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 700, fontSize: '1.1rem' }}>
+Configurar Repetição
+</Typography>
+</Box>
+<Button
+onClick={() => setRepeatConfigDialogOpen(false)}
+sx={{
+bgcolor: getThemeColor(),
+color: '#FFFFFF',
+borderRadius: '24px',
+px: 2.5,
+fontWeight: 600,
+textTransform: 'none',
+fontSize: '0.85rem',
+'&:hover': { bgcolor: getThemeColor(), opacity: 0.9 }
+}}
+>
+Concluir
+</Button>
+</Box>
+
+{/* Rows */}
+<Box sx={{ display: 'flex', flexDirection: 'column' }}>
+{/* Parcela inicial */}
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7E8494" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+<rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+<line x1="16" y1="2" x2="16" y2="6" />
+<line x1="8" y1="2" x2="8" y2="6" />
+<line x1="3" y1="10" x2="21" y2="10" />
+</svg>
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Parcela inicial</Typography>
+</Box>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+<IconButton
+size="small"
+onClick={() => setStartInstallment(Math.max(1, startInstallment - 1))}
+sx={{ color: '#7E8494' }}
+>
+<KeyboardArrowDownIcon />
+</IconButton>
+<Typography sx={{ color: '#FFFFFF', fontWeight: 600, minWidth: '20px', textAlign: 'center' }}>
+{startInstallment}
+</Typography>
+<IconButton
+size="small"
+onClick={() => setStartInstallment(Math.min(installmentsCount, startInstallment + 1))}
+sx={{ color: '#7E8494' }}
+>
+<KeyboardArrowUpIcon />
+</IconButton>
+</Box>
+</Box>
+
+{/* Quantidade */}
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7E8494" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+<circle cx="12" cy="12" r="10" />
+<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+<path d="M2 12h20" />
+</svg>
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Quantidade</Typography>
+</Box>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+<IconButton
+size="small"
+onClick={() => {
+const nextCount = Math.max(1, installmentsCount - 1);
+setInstallmentsCount(nextCount);
+if (startInstallment > nextCount) setStartInstallment(nextCount);
+}}
+sx={{ color: '#7E8494' }}
+>
+<KeyboardArrowDownIcon />
+</IconButton>
+<Typography sx={{ color: '#FFFFFF', fontWeight: 600, minWidth: '20px', textAlign: 'center' }}>
+{installmentsCount}
+</Typography>
+<IconButton
+size="small"
+onClick={() => setInstallmentsCount(installmentsCount + 1)}
+sx={{ color: '#7E8494' }}
+>
+<KeyboardArrowUpIcon />
+</IconButton>
+</Box>
+</Box>
+
+{/* Periodicidade */}
+<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7E8494" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+<rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+<line x1="16" y1="2" x2="16" y2="6" />
+<line x1="8" y1="2" x2="8" y2="6" />
+<line x1="3" y1="10" x2="21" y2="10" />
+</svg>
+<Typography sx={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 500 }}>Periodicidade</Typography>
+</Box>
+<TextField
+select
+value={periodicity}
+onChange={(e) => setPeriodicity(e.target.value)}
+variant="standard"
+InputProps={{ disableUnderline: true }}
+SelectProps={{
+renderValue: (val) => {
+if (val === 'mensal') return 'Mensal';
+if (val === 'semanal') return 'Semanal';
+if (val === 'quinzenal') return 'Quinzenal';
+if (val === 'anual') return 'Anual';
+return 'Mensal';
+}
+}}
+sx={{
+'& .MuiSelect-select': { color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 600, py: 0.5, pr: 3 },
+'& .MuiSelect-icon': { color: '#7E8494' }
+}}
+>
+<MenuItem value="mensal">Mensal</MenuItem>
+<MenuItem value="semanal">Semanal</MenuItem>
+<MenuItem value="quinzenal">Quinzenal</MenuItem>
+<MenuItem value="anual">Anual</MenuItem>
+</TextField>
+</Box>
+</Box>
+</Box>
+</Dialog>
+
+{/* DIALOG: Contabilizar no mês da efetivação? */}
+<Dialog
+open={futureConfirmOpen}
+onClose={() => {
+setFutureConfirmOpen(false);
+setFutureTxToToggle(null);
+}}
+maxWidth="xs"
+fullWidth
+PaperProps={{
+sx: {
+borderRadius: '24px',
+bgcolor: '#15161C',
+backgroundImage: 'none',
+border: '1px solid rgba(255,255,255,0.06)',
+color: '#FFFFFF',
+p: 4
+}
+}}
+>
+<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+<Typography variant="h6" sx={{ fontWeight: 700, color: '#FFFFFF', fontSize: '1.2rem' }}>
+Contabilizar no mês da efetivação?
+</Typography>
+<Typography sx={{ color: '#7E8494', fontSize: '0.9rem', lineHeight: 1.6 }}>
+Essa transação vence em outro mês. Para contabilizar no mês de vencimento, a data da efetivação deve ser no mesmo mês.
+</Typography>
+
+<Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2, mt: 1.5 }}>
+<Button
+onClick={async () => {
+if (futureTxToToggle) {
+const targetDate = futureTxToToggle.dueDate || futureTxToToggle.date;
+await executeToggle(futureTxToToggle, true, targetDate);
+}
+setFutureConfirmOpen(false);
+setFutureTxToToggle(null);
+}}
+sx={{
+color: '#53A1F5',
+textTransform: 'none',
+fontWeight: 600,
+fontSize: '0.875rem',
+'&:hover': { bgcolor: 'rgba(83, 161, 245, 0.08)' }
+}}
+>
+Contabilizar no vencimento
+</Button>
+<Button
+onClick={async () => {
+if (futureTxToToggle) {
+const todayStr = new Date().toISOString().split('T')[0];
+await executeToggle(futureTxToToggle, true, todayStr);
+}
+setFutureConfirmOpen(false);
+setFutureTxToToggle(null);
+}}
+variant="contained"
+sx={{
+bgcolor: '#53A1F5',
+color: '#FFFFFF',
+textTransform: 'none',
+fontWeight: 600,
+borderRadius: '24px',
+px: 3,
+py: 1,
+boxShadow: 'none',
+'&:hover': { bgcolor: '#428FD6', boxShadow: 'none' }
+}}
+>
+Contabilizar em {monthsFull[new Date().getMonth()]}
+</Button>
+</Box>
+</Box>
+</Dialog>
 
       {/* DIALOG: MFA Setup */}
       <Dialog open={mfaOpen} onClose={() => setMfaOpen(false)} maxWidth="xs" fullWidth>
@@ -2378,7 +3513,19 @@ const Resume: React.FC = () => {
               <Button
                 onClick={() => {
                   const formatted = tempDate.toISOString().split('T')[0];
-                  setTxDate(formatted);
+                  if (datePickerTarget === 'EFETIVACAO') {
+                    setTxEffectiveDate(formatted);
+                    if (txEffective && txDueDate && txDueDate > formatted) {
+                      setTxEffective(false);
+                    }
+                  } else if (datePickerTarget === 'VENCIMENTO') {
+                    setTxDueDate(formatted);
+                    if (txEffective && txEffectiveDate && formatted > txEffectiveDate) {
+                      setTxEffective(false);
+                    }
+                  } else {
+                    setTxDate(formatted);
+                  }
                   setDatePickerOpen(false);
                 }}
                 sx={{

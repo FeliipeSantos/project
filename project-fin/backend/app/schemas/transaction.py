@@ -26,6 +26,13 @@ class TransactionRequest(CamelModel):
     attachments_url: Optional[str] = None
     tags: Optional[str] = None
     installments_count: Optional[int] = None
+    effective: Optional[bool] = True
+    effective_date: Optional[date] = None
+    due_date: Optional[date] = None
+    recurrence_type: Optional[str] = None
+    start_installment: Optional[int] = None
+    periodicity: Optional[str] = None
+    value_type: Optional[str] = None
 
 class TransactionResponse(CamelModel):
     id: UUID
@@ -40,6 +47,9 @@ class TransactionResponse(CamelModel):
     notes: Optional[str] = None
     attachments_url: Optional[str] = None
     tags: Optional[str] = None
+    effective: bool
+    effective_date: Optional[date] = None
+    due_date: Optional[date] = None
     installments: Optional[List[TransactionInstallmentResponse]] = None
     created_at: datetime
     updated_at: datetime

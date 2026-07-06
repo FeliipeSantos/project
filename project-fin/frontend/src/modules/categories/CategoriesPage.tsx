@@ -86,6 +86,7 @@ interface Transaction {
   date: string;
   type: 'REVENUE' | 'EXPENSE' | 'TRANSFER';
   description: string;
+  effective?: boolean;
 }
 
 const AVAILABLE_ICONS = [

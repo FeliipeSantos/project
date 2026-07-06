@@ -62,16 +62,23 @@ class CreditCard(Base):
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(50), nullable=False)
-    bank = Column(String(50), nullable=False)
+    bank = Column(String(50), nullable=True)
     brand = Column(String(30), nullable=False)
     limit_total = Column(Numeric(15, 2), nullable=False)
     closing_day = Column(Integer, nullable=False)
     due_day = Column(Integer, nullable=False)
+    color = Column(String(7), nullable=True, default="#3B82F6")
+    initial_invoice = Column(Numeric(15, 2), nullable=True, default=0.00)
+    account_id = Column(PG_UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
+    is_main = Column(Boolean, nullable=False, default=False)
+    dynamic_closing = Column(Boolean, nullable=False, default=False)
+    due_business_days = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="credit_cards")
     transactions = relationship("Transaction", back_populates="credit_card")
+    account = relationship("Account")
 
 
 class Category(Base):
@@ -112,6 +119,9 @@ class Transaction(Base):
     notes = Column(Text, nullable=True)
     attachments_url = Column(Text, nullable=True)
     tags = Column(String(255), nullable=True)
+    effective = Column(Boolean, nullable=False, default=True)
+    effective_date = Column(Date, nullable=True)
+    due_date = Column(Date, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
